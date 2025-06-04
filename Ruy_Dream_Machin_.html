@@ -240,8 +240,8 @@
         <div class="control-group">
             <div class="control-group-header"><i class="fas fa-atom"></i> Partículas <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
             <div class="control-group-content">
-                <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">100</span></label>
-                <input type="range" id="particleCount" min="10" max="500" value="100">
+                <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">80</span></label>
+                <input type="range" id="particleCount" min="10" max="500" value="80">
                 
                 <label for="particleSize">Tamaño Base: <span id="particleSizeValue" class="value-display">3</span></label>
                 <input type="range" id="particleSize" min="1" max="20" value="3">
@@ -270,6 +270,9 @@
                 </label>
                 <label class="checkbox-label">
                     <input type="checkbox" id="particleBlink"> Parpadeo Aleatorio (Opacidad)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleIndividualRandom"> Aleatorización Individual
                 </label>
                  <label for="particleMaxSpeed">Velocidad Máxima: <span id="particleMaxSpeedValue" class="value-display">2</span></label>
                 <input type="range" id="particleMaxSpeed" min="0.1" max="10" step="0.1" value="2">
@@ -375,6 +378,10 @@
                     <option value="square">Cuadrada (Square)</option>
                     <option value="triangle">Triangular (Triangle)</option>
                     <option value="sawtooth">Diente de Sierra (Sawtooth)</option>
+                    <option value="noise">Ruido Blanco</option>
+                    <option value="am">AM</option>
+                    <option value="fm">FM</option>
+                    <option value="burst">Granular Burst</option>
                 </select>
 
                 <label for="soundScale">Escala Musical:</label>
@@ -387,6 +394,9 @@
 
                 <label for="soundRootFreq">Frecuencia Raíz (Tónica): <span id="soundRootFreqValue" class="value-display">C3</span></label>
                 <input type="range" id="soundRootFreq" min="24" max="72" value="48"> <!-- MIDI C1 to C5 -->
+
+                <label for="tempo">Tempo: <span id="tempoValue" class="value-display">120</span> BPM</label>
+                <input type="range" id="tempo" min="60" max="200" value="120">
 
                 <label for="soundOctaveRange">Rango de Octavas: <span id="soundOctaveRangeValue" class="value-display">2</span></label>
                 <input type="range" id="soundOctaveRange" min="1" max="4" value="2">
@@ -407,6 +417,12 @@
                 </label>
                 <label for="soundReverbWet">Cantidad Reverb: <span id="soundReverbWetValue" class="value-display">0.1</span></label>
                 <input type="range" id="soundReverbWet" min="0" max="1" step="0.05" value="0.1">
+                <label for="soundReverbType">Tipo de Reverb:</label>
+                <select id="soundReverbType">
+                    <option value="room" selected>Room</option>
+                    <option value="hall">Hall</option>
+                    <option value="cave">Cave</option>
+                </select>
 
                 <label class="checkbox-label">
                     <input type="checkbox" id="soundDelay"> Delay (Eco)
@@ -479,12 +495,13 @@
         
         // Default settings object
         const defaultSettings = {
-            particleCount: 100,
+            particleCount: 80,
             particleSize: 3,
             particleShape: "circle",
             particleColorPalette: "neon",
             particleGlow: false,
             particleBlink: false,
+            particleIndividualRandom: false,
             particleMaxSpeed: 2,
             mouseEffect: "attract",
             mouseInfluenceRadius: 150,
@@ -513,8 +530,10 @@
             soundRichTimbre: false,
             soundAttack: 0.01,
             soundRelease: 0.5,
+            tempo: 120,
             soundReverb: false,
             soundReverbWet: 0.1,
+            soundReverbType: 'room',
             soundDelay: false,
             soundDelayTime: 0.25,
             soundDelayFeedback: 0.3,
@@ -539,6 +558,7 @@
             particleColorPalette: document.getElementById('particleColorPalette'),
             particleGlow: document.getElementById('particleGlow'),
             particleBlink: document.getElementById('particleBlink'),
+            particleIndividualRandom: document.getElementById('particleIndividualRandom'),
             particleMaxSpeed: document.getElementById('particleMaxSpeed'),
             particleMaxSpeedValue: document.getElementById('particleMaxSpeedValue'),
             mouseEffect: document.getElementById('mouseEffect'),
@@ -569,6 +589,8 @@
             soundOnBounce: document.getElementById('soundOnBounce'),
             masterVolume: document.getElementById('masterVolume'),
             masterVolumeValue: document.getElementById('masterVolumeValue'),
+            tempo: document.getElementById('tempo'),
+            tempoValue: document.getElementById('tempoValue'),
             soundWaveform: document.getElementById('soundWaveform'),
             soundScale: document.getElementById('soundScale'),
             soundRootFreq: document.getElementById('soundRootFreq'),
@@ -583,6 +605,7 @@
             soundReverb: document.getElementById('soundReverb'),
             soundReverbWet: document.getElementById('soundReverbWet'),
             soundReverbWetValue: document.getElementById('soundReverbWetValue'),
+            soundReverbType: document.getElementById('soundReverbType'),
             soundDelay: document.getElementById('soundDelay'),
             soundDelayTime: document.getElementById('soundDelayTime'),
             soundDelayTimeValue: document.getElementById('soundDelayTimeValue'),
@@ -653,11 +676,12 @@
         async function initializeSound() {
             if (soundInitialized) return;
             await Tone.start(); // Required for user gesture
+            Tone.Transport.start();
 
             masterGain = new Tone.Gain(settings.masterVolume / 100).toDestination(); // Scale for Gain node
             
             reverb = new Tone.Reverb({
-                decay: 1.5,
+                decay: settings.soundReverbType === 'hall' ? 3 : (settings.soundReverbType === 'cave' ? 6 : 1.5),
                 wet: settings.soundReverbWet
             }).connect(masterGain);
 
@@ -680,53 +704,37 @@
             soundInitialized = true;
             showMessage("Sistema de sonido inicializado.", 2000);
         }
-        
         function configureToneSynth() {
-            if (polySynth) {
-                polySynth.dispose();
+            if (polySynth) { polySynth.dispose(); }
+            let SynthClass;
+            let opts = {};
+            switch(settings.soundWaveform){
+                case "noise":
+                    SynthClass = Tone.NoiseSynth;
+                    opts = {noise:{type:"white"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0, release:settings.soundRelease}};
+                    break;
+                case "am":
+                    SynthClass = Tone.AMSynth;
+                    opts = {oscillator:{type:"sine"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}};
+                    break;
+                case "fm":
+                    SynthClass = Tone.FMSynth;
+                    opts = {oscillator:{type:"sine"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}};
+                    break;
+                case "burst":
+                    SynthClass = Tone.MembraneSynth;
+                    opts = {envelope:{attack:settings.soundAttack, decay:settings.soundRelease, sustain:0, release:settings.soundRelease}};
+                    break;
+                default:
+                    SynthClass = settings.soundRichTimbre ? Tone.FMSynth : Tone.Synth;
+                    opts = {oscillator:{type:settings.soundWaveform}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}, harmonicity:settings.soundRichTimbre?3:1, modulationIndex:settings.soundRichTimbre?10:1, modulationEnvelope:{attack:settings.soundRichTimbre?0.01:0, decay:settings.soundRichTimbre?0.1:0, sustain:settings.soundRichTimbre?0.2:0, release:settings.soundRichTimbre?0.2:0}};
             }
-            const synthType = settings.soundRichTimbre ? Tone.FMSynth : Tone.Synth;
-            polySynth = new Tone.PolySynth(synthType, {
-                oscillator: { type: settings.soundWaveform },
-                envelope: {
-                    attack: settings.soundAttack,
-                    decay: 0.1, // Kept short
-                    sustain: 0.3, // Kept medium
-                    release: settings.soundRelease
-                },
-                // For FMSynth
-                harmonicity: settings.soundRichTimbre ? 3 : 1,
-                modulationIndex: settings.soundRichTimbre ? 10 : 1,
-                modulationEnvelope: {
-                    attack: settings.soundRichTimbre ? 0.01 : 0,
-                    decay: settings.soundRichTimbre ? 0.1 : 0,
-                    sustain: settings.soundRichTimbre ? 0.2 : 0,
-                    release: settings.soundRichTimbre ? 0.2 : 0,
-                }
-            });
-            
-            // Connect synth to effects chain based on checkboxes
-            let currentNode = polySynth;
-            if (settings.soundPhaser) currentNode.connect(phaser); else currentNode.connect(masterGain);
-            if (settings.soundDelay) (settings.soundPhaser ? phaser : polySynth).connect(delay);
-            if (settings.soundReverb) (settings.soundDelay ? delay : (settings.soundPhaser ? phaser : polySynth)).connect(reverb);
-            
-            if(!settings.soundPhaser && !settings.soundDelay && !settings.soundReverb) {
-                 polySynth.connect(masterGain);
-            } else {
-                if (settings.soundPhaser) polySynth.chain(phaser, masterGain);
-                if (settings.soundDelay) polySynth.chain(delay, masterGain);
-                if (settings.soundReverb) polySynth.chain(reverb, masterGain);
-
-                // This logic needs to be smarter for a proper chain.
-                // For now, simplified: connect to first active effect, or masterGain.
-                // A more robust chain:
-                let connectionPoint = polySynth;
-                if (settings.soundPhaser) { connectionPoint.connect(phaser); connectionPoint = phaser; }
-                if (settings.soundDelay) { connectionPoint.connect(delay); connectionPoint = delay; }
-                if (settings.soundReverb) { connectionPoint.connect(reverb); connectionPoint = reverb; }
-                connectionPoint.connect(masterGain); // Final connection
-            }
+            polySynth = new Tone.PolySynth(SynthClass, opts);
+            let cp = polySynth;
+            if (settings.soundPhaser) { cp.connect(phaser); cp = phaser; }
+            if (settings.soundDelay) { cp.connect(delay); cp = delay; }
+            if (settings.soundReverb) { cp.connect(reverb); cp = reverb; }
+            cp.connect(masterGain);
         }
 
         function updateSoundSettings() {
@@ -734,25 +742,11 @@
 
             masterGain.gain.rampTo(Tone.dbToGain(settings.masterVolume), 0.1);
 
-            if (polySynth) {
-                polySynth.set({
-                    oscillator: { type: settings.soundWaveform },
-                    envelope: {
-                        attack: settings.soundAttack,
-                        release: settings.soundRelease
-                    }
-                });
-                 if (settings.soundRichTimbre && polySynth. आवाजیں && polySynth.voices[0] instanceof Tone.FMSynth) { // आवाजیں is 'voices' in Hindi
-                    polySynth.set({
-                        harmonicity: 3,
-                        modulationIndex: 10,
-                         modulationEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 }
-                    });
-                } else if (polySynth.voices && polySynth.voices[0] instanceof Tone.FMSynth) { // FMSynth but rich timbre off
-                     polySynth.set({ harmonicity: 1, modulationIndex: 1});
-                }
-            }
+            Tone.Transport.bpm.rampTo(settings.tempo, 0.1);
+
+            configureToneSynth();
             
+            reverb.decay = settings.soundReverbType === 'hall' ? 3 : (settings.soundReverbType === 'cave' ? 6 : 1.5);
             reverb.wet.rampTo(settings.soundReverb ? settings.soundReverbWet : 0, 0.1);
             delay.delayTime.rampTo(settings.soundDelayTime, 0.1);
             delay.feedback.rampTo(settings.soundDelayFeedback, 0.1);
@@ -761,8 +755,6 @@
             phaser.frequency.rampTo(settings.soundPhaserFreq, 0.1);
             phaser.wet.rampTo(settings.soundPhaser ? 0.5 : 0, 0.1); // Enable/disable phaser via wet
 
-            // Re-evaluate connections if synth type or effect chain changes
-            configureToneSynth();
         }
         
         const scales = {
@@ -822,6 +814,7 @@
                 this.vy = (Math.random() - 0.5) * settings.particleMaxSpeed;
                 this.color = getRandomColor();
                 this.originalColor = this.color;
+                this.shape = settings.particleShape;
                 this.opacity = 1;
                 this.life = 0; // For effects like temporary color change
                 this.maxLife = 60; // Frames
@@ -832,6 +825,19 @@
                 if (this.life > this.maxLife) {
                     this.color = this.originalColor; // Revert color
                     this.size = this.baseSize; // Revert size
+                }
+
+                if (settings.particleIndividualRandom) {
+                    this.vx += (Math.random() - 0.5) * 0.2;
+                    this.vy += (Math.random() - 0.5) * 0.2;
+                    if (Math.random() < 0.02) {
+                        this.color = getRandomColor();
+                        this.originalColor = this.color;
+                    }
+                    if (Math.random() < 0.01) {
+                        const shapes = ['circle', 'square', 'triangle'];
+                        this.shape = shapes[Math.floor(Math.random()*shapes.length)];
+                    }
                 }
 
                 // Basic movement
@@ -893,7 +899,7 @@
 
                 ctx.fillStyle = this.color;
                 
-                const shape = settings.particleShape;
+                const shape = this.shape;
                 if (shape === 'circle') {
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 } else if (shape === 'square') {
@@ -1301,6 +1307,7 @@
             settings.particleColorPalette = palettesKeys[Math.floor(Math.random() * palettesKeys.length)];
             settings.particleGlow = Math.random() > 0.5;
             settings.particleBlink = Math.random() > 0.5;
+            settings.particleIndividualRandom = Math.random() > 0.5;
             settings.particleMaxSpeed = Math.random() * (parseFloat(ui.particleMaxSpeed.max) - parseFloat(ui.particleMaxSpeed.min)) + parseFloat(ui.particleMaxSpeed.min);
 
             // Randomize background and effects
