@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Partículas Avanzado Chatsito</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #2c2c2c;
+            --text-color: #f0f0f0;
+            --accent-color: #00aaff;
+            --accent-hover: #0077cc;
+            --input-bg: #3a3a3a;
+            --border-color: #444;
+            --slider-thumb-bg: var(--accent-color);
+            --slider-track-bg: #555;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #visualizerCanvas {
+            display: block;
+            background-color: #000; /* Default, can be overridden by JS */
+        }
+
+        #controlsPanel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            width: 320px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        #controlsPanel.hidden {
+            transform: translateX(-110%);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding:0;
+        }
+
+        .control-group-header {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .control-group-header:hover {
+            background-color: #4a4a4a;
+        }
+
+        .control-group-content {
+            padding: 10px;
+            background-color: var(--panel-bg);
+            border-radius: 0 0 5px 5px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+        .control-group-content.open {
+            max-height: 1000px; /* Large enough for content */
+            padding: 10px;
+        }
+
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        .control-group input[type="range"],
+        .control-group select,
+        .control-group input[type="color"],
+        .control-group input[type="number"] {
+            width: calc(100% - 10px);
+            padding: 6px;
+            margin-bottom: 10px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .control-group input[type="range"] {
+            padding: 0;
+            height: 20px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--slider-thumb-bg);
+            cursor: pointer;
+            border-radius: 50%;
+            margin-top: -6px; /* Adjust to center thumb on track */
+        }
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--slider-thumb-bg);
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .control-group input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--slider-track-bg);
+            border-radius: 2px;
+        }
+        .control-group input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--slider-track-bg);
+            border-radius: 2px;
+        }
+
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            accent-color: var(--accent-color);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9em;
+            margin: 5px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+        .small-button-row button {
+            padding: 6px 10px;
+            font-size: 0.8em;
+        }
+
+        #toggleControlsBtn {
+            position: fixed;
+            top: 10px;
+            left: 10px; /* Initial position, will be shifted if panel is visible */
+            z-index: 101;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 1.2em;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            transition: left 0.3s ease-in-out, background-color 0.2s;
+        }
+        #toggleControlsBtn.panel-visible {
+            left: 345px; /* width of panel + some margin */
+        }
+        #toggleControlsBtn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        #messageBox {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 170, 255, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 200;
+            display: none;
+            font-size: 0.9em;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .value-display {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="visualizerCanvas"></canvas>
+    <button id="toggleControlsBtn"><i class="fas fa-bars"></i></button>
+
+    <div id="controlsPanel">
+        <div class="small-button-row" style="margin-bottom: 10px; text-align: center;">
+            <button id="fullscreenBtn"><i class="fas fa-expand"></i> Pantalla Completa</button>
+            <button id="resetBtn"><i class="fas fa-undo"></i> Reiniciar Todo</button>
+        </div>
+
+        <!-- Particle Controls -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-atom"></i> Partículas <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">100</span></label>
+                <input type="range" id="particleCount" min="10" max="500" value="100">
+                
+                <label for="particleSize">Tamaño Base: <span id="particleSizeValue" class="value-display">3</span></label>
+                <input type="range" id="particleSize" min="1" max="20" value="3">
+
+                <label for="particleShape">Forma Base:</label>
+                <select id="particleShape">
+                    <option value="circle" selected>Círculo</option>
+                    <option value="square">Cuadrado</option>
+                    <option value="triangle">Triángulo</option>
+                </select>
+
+                <label for="particleColorPalette">Paleta de Colores:</label>
+                <select id="particleColorPalette">
+                    <option value="neon" selected>Neón</option>
+                    <option value="pastel">Pastel</option>
+                    <option value="monochrome">Monocromo</option>
+                    <option value="fire">Fuego</option>
+                    <option value="ocean">Océano</option>
+                    <option value="rainbow">Arcoiris Dinámico</option>
+                    <option value="glitchColors">Colores Glitch</option>
+                    <option value="electric">Eléctrica</option>
+                </select>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleGlow"> Brillo/Glow
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleBlink"> Parpadeo Aleatorio (Opacidad)
+                </label>
+                 <label for="particleMaxSpeed">Velocidad Máxima: <span id="particleMaxSpeedValue" class="value-display">2</span></label>
+                <input type="range" id="particleMaxSpeed" min="0.1" max="10" step="0.1" value="2">
+            </div>
+        </div>
+
+        <!-- Mouse Interaction -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-mouse-pointer"></i> Interacción Mouse <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label for="mouseEffect">Efecto Movimiento:</label>
+                <select id="mouseEffect">
+                    <option value="attract" selected>Atraer</option>
+                    <option value="repel">Repeler</option>
+                    <option value="vortex">Vórtice</option>
+                </select>
+                <label for="mouseInfluenceRadius">Radio Influencia: <span id="mouseInfluenceRadiusValue" class="value-display">150</span></label>
+                <input type="range" id="mouseInfluenceRadius" min="50" max="500" value="150">
+                <label for="mouseForce">Fuerza Influencia: <span id="mouseForceValue" class="value-display">0.5</span></label>
+                <input type="range" id="mouseForce" min="0.1" max="2" step="0.1" value="0.5">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="mouseColorChange" checked> Cambiar Color Cercanas
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="mouseSizeChange" checked> Cambiar Tamaño Cercanas
+                </label>
+                <p style="font-size:0.8em; margin-top: 5px;">Click Izquierdo: Explosión de partículas.<br>Click Derecho: Generar nuevas partículas.</p>
+            </div>
+        </div>
+
+        <!-- Microphone Interaction -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-microphone-alt"></i> Interacción Micrófono <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="micActive"> Activar Micrófono
+                </label>
+                <label for="micSensitivity">Sensibilidad: <span id="micSensitivityValue" class="value-display">1</span></label>
+                <input type="range" id="micSensitivity" min="0.1" max="5" step="0.1" value="1" disabled>
+                <p style="font-size:0.8em; margin-top: 5px;">Afecta tamaño y velocidad de partículas.</p>
+            </div>
+        </div>
+        
+        <!-- Background & Effects -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-image"></i> Fondo y Efectos Visuales <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label for="bgColor">Color Fondo Estático:</label>
+                <input type="color" id="bgColor" value="#000000">
+
+                <label for="trailOpacity">Opacidad Estela (Trail): <span id="trailOpacityValue" class="value-display">0.1</span></label>
+                <input type="range" id="trailOpacity" min="0" max="1" step="0.01" value="0.1">
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="bgPulsing"> Fondo Pulsante
+                </label>
+                <label for="bgPulseSpeed">Velocidad Pulso Fondo: <span id="bgPulseSpeedValue" class="value-display">0.5</span></label>
+                <input type="range" id="bgPulseSpeed" min="0.1" max="2" step="0.1" value="0.5">
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="bgGlitch"> Efecto Glitch Fondo
+                </label>
+                <label for="bgGlitchIntensity">Intensidad Glitch: <span id="bgGlitchIntensityValue" class="value-display">0.1</span></label>
+                <input type="range" id="bgGlitchIntensity" min="0.01" max="0.5" step="0.01" value="0.1">
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="zoomEffect"> Efecto Zoom Psicodélico
+                </label>
+                <label for="zoomEffectIntensity">Intensidad Zoom: <span id="zoomEffectIntensityValue" class="value-display">0.001</span></label>
+                <input type="range" id="zoomEffectIntensity" min="0.0001" max="0.005" step="0.0001" value="0.001">
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="additiveBlending"> Fusión Aditiva Colores
+                </label>
+            </div>
+        </div>
+
+        <!-- Sound Basic -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-volume-up"></i> Sonido Básico Partículas <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundEnabled"> Activar Sonido Partículas
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundOnBirth" checked> Sonido al Nacer
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundOnBounce"> Sonido al Rebotar
+                </label>
+                 <label for="masterVolume">Volumen General Sonidos: <span id="masterVolumeValue" class="value-display">-12</span> dB</label>
+                <input type="range" id="masterVolume" min="-60" max="0" value="-12">
+            </div>
+        </div>
+        
+        <!-- Sound Advanced -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-music"></i> Sonido Avanzado (Tone.js) <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label for="soundWaveform">Forma de Onda:</label>
+                <select id="soundWaveform">
+                    <option value="sine" selected>Senoidal (Sine)</option>
+                    <option value="square">Cuadrada (Square)</option>
+                    <option value="triangle">Triangular (Triangle)</option>
+                    <option value="sawtooth">Diente de Sierra (Sawtooth)</option>
+                </select>
+
+                <label for="soundScale">Escala Musical:</label>
+                <select id="soundScale">
+                    <option value="pentatonicMajor" selected>Pentatónica Mayor</option>
+                    <option value="minor">Menor Natural</option>
+                    <option value="lydian">Lydian</option>
+                    <option value="chromatic">Cromática</option>
+                </select>
+
+                <label for="soundRootFreq">Frecuencia Raíz (Tónica): <span id="soundRootFreqValue" class="value-display">C3</span></label>
+                <input type="range" id="soundRootFreq" min="24" max="72" value="48"> <!-- MIDI C1 to C5 -->
+
+                <label for="soundOctaveRange">Rango de Octavas: <span id="soundOctaveRangeValue" class="value-display">2</span></label>
+                <input type="range" id="soundOctaveRange" min="1" max="4" value="2">
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundRichTimbre"> Timbre Enriquecido (FM)
+                </label>
+
+                <label for="soundAttack">Ataque Nota: <span id="soundAttackValue" class="value-display">0.01</span>s</label>
+                <input type="range" id="soundAttack" min="0.005" max="0.5" step="0.005" value="0.01">
+                
+                <label for="soundRelease">Liberación Nota: <span id="soundReleaseValue" class="value-display">0.5</span>s</label>
+                <input type="range" id="soundRelease" min="0.1" max="2" step="0.1" value="0.5">
+
+                <p style="font-weight: bold; margin-top:15px;">Efectos Globales:</p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundReverb"> Reverb
+                </label>
+                <label for="soundReverbWet">Cantidad Reverb: <span id="soundReverbWetValue" class="value-display">0.1</span></label>
+                <input type="range" id="soundReverbWet" min="0" max="1" step="0.05" value="0.1">
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundDelay"> Delay (Eco)
+                </label>
+                <label for="soundDelayTime">Tiempo Delay: <span id="soundDelayTimeValue" class="value-display">0.25</span>s</label>
+                <input type="range" id="soundDelayTime" min="0.05" max="1" step="0.01" value="0.25">
+                <label for="soundDelayFeedback">Feedback Delay: <span id="soundDelayFeedbackValue" class="value-display">0.3</span></label>
+                <input type="range" id="soundDelayFeedback" min="0" max="0.9" step="0.05" value="0.3">
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundPhaser"> Phaser
+                </label>
+                <label for="soundPhaserFreq">Velocidad Phaser: <span id="soundPhaserFreqValue" class="value-display">0.5</span> Hz</label>
+                <input type="range" id="soundPhaserFreq" min="0.1" max="5" step="0.1" value="0.5">
+            </div>
+        </div>
+
+        <!-- Kaleidoscope -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-sync-alt"></i> Caleidoscopio <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="kaleidoscopeActive"> Activar Caleidoscopio
+                </label>
+                <label for="kaleidoscopeSegments">Segmentos: <span id="kaleidoscopeSegmentsValue" class="value-display">6</span></label>
+                <input type="range" id="kaleidoscopeSegments" min="2" max="24" value="6">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="kaleidoscopeMirror" checked> Reflejar Segmentos (Espejo)
+                </label>
+            </div>
+        </div>
+        
+        <!-- Randomizer -->
+        <div class="control-group">
+            <div class="control-group-header"><i class="fas fa-random"></i> Aleatorizador <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
+            <div class="control-group-content">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="randomizerActive"> Activar Aleatorizador
+                </label>
+                <label for="randomizerInterval">Intervalo (segundos):</label>
+                <select id="randomizerInterval">
+                    <option value="5">5s</option>
+                    <option value="10" selected>10s</option>
+                    <option value="15">15s</option>
+                    <option value="30">30s</option>
+                </select>
+            </div>
+        </div>
+
+    </div>
+    <div id="messageBox"></div>
+
+    <script>
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let audioContext, analyserNode, microphone, dataArray;
+        let randomizerIntervalId = null;
+
+        // --- Tone.js Setup ---
+        let masterGain, polySynth, reverb, delay, phaser;
+        let soundInitialized = false;
+
+        const midiNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        function midiToNoteName(midiNum) {
+            const octave = Math.floor(midiNum / 12) -1; // Tone.js MIDI notes are offset
+            const noteIndex = midiNum % 12;
+            return midiNoteNames[noteIndex] + octave;
+        }
+        
+        // Default settings object
+        const defaultSettings = {
+            particleCount: 100,
+            particleSize: 3,
+            particleShape: "circle",
+            particleColorPalette: "neon",
+            particleGlow: false,
+            particleBlink: false,
+            particleMaxSpeed: 2,
+            mouseEffect: "attract",
+            mouseInfluenceRadius: 150,
+            mouseForce: 0.5,
+            mouseColorChange: true,
+            mouseSizeChange: true,
+            micActive: false,
+            micSensitivity: 1,
+            bgColor: "#000000",
+            trailOpacity: 0.1,
+            bgPulsing: false,
+            bgPulseSpeed: 0.5,
+            bgGlitch: false,
+            bgGlitchIntensity: 0.1,
+            zoomEffect: false,
+            zoomEffectIntensity: 0.001,
+            additiveBlending: false,
+            soundEnabled: false,
+            soundOnBirth: true,
+            soundOnBounce: false,
+            masterVolume: -12,
+            soundWaveform: "sine",
+            soundScale: "pentatonicMajor",
+            soundRootFreq: 48, // MIDI C3
+            soundOctaveRange: 2,
+            soundRichTimbre: false,
+            soundAttack: 0.01,
+            soundRelease: 0.5,
+            soundReverb: false,
+            soundReverbWet: 0.1,
+            soundDelay: false,
+            soundDelayTime: 0.25,
+            soundDelayFeedback: 0.3,
+            soundPhaser: false,
+            soundPhaserFreq: 0.5,
+            kaleidoscopeActive: false,
+            kaleidoscopeSegments: 6,
+            kaleidoscopeMirror: true,
+            randomizerActive: false,
+            randomizerInterval: 10
+        };
+
+        let settings = { ...defaultSettings };
+
+        // --- UI Elements ---
+        const ui = {
+            particleCount: document.getElementById('particleCount'),
+            particleCountValue: document.getElementById('particleCountValue'),
+            particleSize: document.getElementById('particleSize'),
+            particleSizeValue: document.getElementById('particleSizeValue'),
+            particleShape: document.getElementById('particleShape'),
+            particleColorPalette: document.getElementById('particleColorPalette'),
+            particleGlow: document.getElementById('particleGlow'),
+            particleBlink: document.getElementById('particleBlink'),
+            particleMaxSpeed: document.getElementById('particleMaxSpeed'),
+            particleMaxSpeedValue: document.getElementById('particleMaxSpeedValue'),
+            mouseEffect: document.getElementById('mouseEffect'),
+            mouseInfluenceRadius: document.getElementById('mouseInfluenceRadius'),
+            mouseInfluenceRadiusValue: document.getElementById('mouseInfluenceRadiusValue'),
+            mouseForce: document.getElementById('mouseForce'),
+            mouseForceValue: document.getElementById('mouseForceValue'),
+            mouseColorChange: document.getElementById('mouseColorChange'),
+            mouseSizeChange: document.getElementById('mouseSizeChange'),
+            micActive: document.getElementById('micActive'),
+            micSensitivity: document.getElementById('micSensitivity'),
+            micSensitivityValue: document.getElementById('micSensitivityValue'),
+            bgColor: document.getElementById('bgColor'),
+            trailOpacity: document.getElementById('trailOpacity'),
+            trailOpacityValue: document.getElementById('trailOpacityValue'),
+            bgPulsing: document.getElementById('bgPulsing'),
+            bgPulseSpeed: document.getElementById('bgPulseSpeed'),
+            bgPulseSpeedValue: document.getElementById('bgPulseSpeedValue'),
+            bgGlitch: document.getElementById('bgGlitch'),
+            bgGlitchIntensity: document.getElementById('bgGlitchIntensity'),
+            bgGlitchIntensityValue: document.getElementById('bgGlitchIntensityValue'),
+            zoomEffect: document.getElementById('zoomEffect'),
+            zoomEffectIntensity: document.getElementById('zoomEffectIntensity'),
+            zoomEffectIntensityValue: document.getElementById('zoomEffectIntensityValue'),
+            additiveBlending: document.getElementById('additiveBlending'),
+            soundEnabled: document.getElementById('soundEnabled'),
+            soundOnBirth: document.getElementById('soundOnBirth'),
+            soundOnBounce: document.getElementById('soundOnBounce'),
+            masterVolume: document.getElementById('masterVolume'),
+            masterVolumeValue: document.getElementById('masterVolumeValue'),
+            soundWaveform: document.getElementById('soundWaveform'),
+            soundScale: document.getElementById('soundScale'),
+            soundRootFreq: document.getElementById('soundRootFreq'),
+            soundRootFreqValue: document.getElementById('soundRootFreqValue'),
+            soundOctaveRange: document.getElementById('soundOctaveRange'),
+            soundOctaveRangeValue: document.getElementById('soundOctaveRangeValue'),
+            soundRichTimbre: document.getElementById('soundRichTimbre'),
+            soundAttack: document.getElementById('soundAttack'),
+            soundAttackValue: document.getElementById('soundAttackValue'),
+            soundRelease: document.getElementById('soundRelease'),
+            soundReleaseValue: document.getElementById('soundReleaseValue'),
+            soundReverb: document.getElementById('soundReverb'),
+            soundReverbWet: document.getElementById('soundReverbWet'),
+            soundReverbWetValue: document.getElementById('soundReverbWetValue'),
+            soundDelay: document.getElementById('soundDelay'),
+            soundDelayTime: document.getElementById('soundDelayTime'),
+            soundDelayTimeValue: document.getElementById('soundDelayTimeValue'),
+            soundDelayFeedback: document.getElementById('soundDelayFeedback'),
+            soundDelayFeedbackValue: document.getElementById('soundDelayFeedbackValue'),
+            soundPhaser: document.getElementById('soundPhaser'),
+            soundPhaserFreq: document.getElementById('soundPhaserFreq'),
+            soundPhaserFreqValue: document.getElementById('soundPhaserFreqValue'),
+            kaleidoscopeActive: document.getElementById('kaleidoscopeActive'),
+            kaleidoscopeSegments: document.getElementById('kaleidoscopeSegments'),
+            kaleidoscopeSegmentsValue: document.getElementById('kaleidoscopeSegmentsValue'),
+            kaleidoscopeMirror: document.getElementById('kaleidoscopeMirror'),
+            randomizerActive: document.getElementById('randomizerActive'),
+            randomizerInterval: document.getElementById('randomizerInterval'),
+            messageBox: document.getElementById('messageBox'),
+            controlsPanel: document.getElementById('controlsPanel'),
+            toggleControlsBtn: document.getElementById('toggleControlsBtn'),
+            fullscreenBtn: document.getElementById('fullscreenBtn'),
+            resetBtn: document.getElementById('resetBtn')
+        };
+
+        function updateSettingsFromUI() {
+            for (const key in defaultSettings) {
+                if (ui[key]) {
+                    if (ui[key].type === 'checkbox') {
+                        settings[key] = ui[key].checked;
+                    } else if (ui[key].type === 'range' || ui[key].type === 'number') {
+                        settings[key] = parseFloat(ui[key].value);
+                    } else {
+                        settings[key] = ui[key].value;
+                    }
+                }
+            }
+             // Special handling for particle count due to performance, re-init if changed
+            if (particles.length !== settings.particleCount) {
+                initParticles();
+            }
+        }
+
+        function updateUIFromSettings() {
+            for (const key in settings) {
+                if (ui[key]) {
+                    if (ui[key].type === 'checkbox') {
+                        ui[key].checked = settings[key];
+                    } else {
+                        ui[key].value = settings[key];
+                    }
+                    // Update value displays for sliders
+                    if (ui[key + 'Value']) {
+                        if (key === 'soundRootFreq') {
+                             ui[key + 'Value'].textContent = midiToNoteName(settings[key]);
+                        } else if (key === 'masterVolume') {
+                             ui[key + 'Value'].textContent = settings[key] + ' dB';
+                        } else {
+                            ui[key + 'Value'].textContent = settings[key];
+                        }
+                    }
+                }
+            }
+             // Handle dependent UI states
+            ui.micSensitivity.disabled = !settings.micActive;
+            
+            // Re-init sound if synth type changes
+            if(soundInitialized) configureToneSynth();
+        }
+        
+        // Initialize Tone.js elements
+        async function initializeSound() {
+            if (soundInitialized) return;
+            await Tone.start(); // Required for user gesture
+
+            masterGain = new Tone.Gain(settings.masterVolume / 100).toDestination(); // Scale for Gain node
+            
+            reverb = new Tone.Reverb({
+                decay: 1.5,
+                wet: settings.soundReverbWet
+            }).connect(masterGain);
+
+            delay = new Tone.FeedbackDelay({
+                delayTime: settings.soundDelayTime,
+                feedback: settings.soundDelayFeedback,
+                wet: 0.5 // Fixed wet for delay, enable/disable via connection
+            }).connect(masterGain);
+            
+            phaser = new Tone.Phaser({
+                frequency: settings.soundPhaserFreq,
+                octaves: 3,
+                stages: 10,
+                Q: 5,
+                baseFrequency: 350,
+                wet: 0.5 // Fixed wet, enable/disable via connection
+            }).connect(masterGain);
+
+            configureToneSynth();
+            soundInitialized = true;
+            showMessage("Sistema de sonido inicializado.", 2000);
+        }
+        
+        function configureToneSynth() {
+            if (polySynth) {
+                polySynth.dispose();
+            }
+            const synthType = settings.soundRichTimbre ? Tone.FMSynth : Tone.Synth;
+            polySynth = new Tone.PolySynth(synthType, {
+                oscillator: { type: settings.soundWaveform },
+                envelope: {
+                    attack: settings.soundAttack,
+                    decay: 0.1, // Kept short
+                    sustain: 0.3, // Kept medium
+                    release: settings.soundRelease
+                },
+                // For FMSynth
+                harmonicity: settings.soundRichTimbre ? 3 : 1,
+                modulationIndex: settings.soundRichTimbre ? 10 : 1,
+                modulationEnvelope: {
+                    attack: settings.soundRichTimbre ? 0.01 : 0,
+                    decay: settings.soundRichTimbre ? 0.1 : 0,
+                    sustain: settings.soundRichTimbre ? 0.2 : 0,
+                    release: settings.soundRichTimbre ? 0.2 : 0,
+                }
+            });
+            
+            // Connect synth to effects chain based on checkboxes
+            let currentNode = polySynth;
+            if (settings.soundPhaser) currentNode.connect(phaser); else currentNode.connect(masterGain);
+            if (settings.soundDelay) (settings.soundPhaser ? phaser : polySynth).connect(delay);
+            if (settings.soundReverb) (settings.soundDelay ? delay : (settings.soundPhaser ? phaser : polySynth)).connect(reverb);
+            
+            if(!settings.soundPhaser && !settings.soundDelay && !settings.soundReverb) {
+                 polySynth.connect(masterGain);
+            } else {
+                if (settings.soundPhaser) polySynth.chain(phaser, masterGain);
+                if (settings.soundDelay) polySynth.chain(delay, masterGain);
+                if (settings.soundReverb) polySynth.chain(reverb, masterGain);
+
+                // This logic needs to be smarter for a proper chain.
+                // For now, simplified: connect to first active effect, or masterGain.
+                // A more robust chain:
+                let connectionPoint = polySynth;
+                if (settings.soundPhaser) { connectionPoint.connect(phaser); connectionPoint = phaser; }
+                if (settings.soundDelay) { connectionPoint.connect(delay); connectionPoint = delay; }
+                if (settings.soundReverb) { connectionPoint.connect(reverb); connectionPoint = reverb; }
+                connectionPoint.connect(masterGain); // Final connection
+            }
+        }
+
+        function updateSoundSettings() {
+            if (!soundInitialized) return;
+
+            masterGain.gain.rampTo(Tone.dbToGain(settings.masterVolume), 0.1);
+
+            if (polySynth) {
+                polySynth.set({
+                    oscillator: { type: settings.soundWaveform },
+                    envelope: {
+                        attack: settings.soundAttack,
+                        release: settings.soundRelease
+                    }
+                });
+                 if (settings.soundRichTimbre && polySynth. आवाजیں && polySynth.voices[0] instanceof Tone.FMSynth) { // आवाजیں is 'voices' in Hindi
+                    polySynth.set({
+                        harmonicity: 3,
+                        modulationIndex: 10,
+                         modulationEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 }
+                    });
+                } else if (polySynth.voices && polySynth.voices[0] instanceof Tone.FMSynth) { // FMSynth but rich timbre off
+                     polySynth.set({ harmonicity: 1, modulationIndex: 1});
+                }
+            }
+            
+            reverb.wet.rampTo(settings.soundReverb ? settings.soundReverbWet : 0, 0.1);
+            delay.delayTime.rampTo(settings.soundDelayTime, 0.1);
+            delay.feedback.rampTo(settings.soundDelayFeedback, 0.1);
+            delay.wet.rampTo(settings.soundDelay ? 0.5 : 0, 0.1); // Enable/disable delay via wet
+            
+            phaser.frequency.rampTo(settings.soundPhaserFreq, 0.1);
+            phaser.wet.rampTo(settings.soundPhaser ? 0.5 : 0, 0.1); // Enable/disable phaser via wet
+
+            // Re-evaluate connections if synth type or effect chain changes
+            configureToneSynth();
+        }
+        
+        const scales = {
+            pentatonicMajor: [0, 2, 4, 7, 9], // Intervals from root
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            lydian: [0, 2, 4, 6, 7, 9, 11],
+            chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        };
+
+        function getNoteInScale(normalizedValue) { // normalizedValue 0-1
+            const scaleIntervals = scales[settings.soundScale];
+            const numNotesInScale = scaleIntervals.length;
+            const totalNotesAvailable = numNotesInScale * settings.soundOctaveRange;
+            
+            let noteIndexInOctaves = Math.floor(normalizedValue * totalNotesAvailable);
+            if (noteIndexInOctaves >= totalNotesAvailable) noteIndexInOctaves = totalNotesAvailable -1;
+
+            const octaveOffset = Math.floor(noteIndexInOctaves / numNotesInScale);
+            const scaleDegreeIndex = noteIndexInOctaves % numNotesInScale;
+            
+            const baseMidi = settings.soundRootFreq;
+            const note = baseMidi + (octaveOffset * 12) + scaleIntervals[scaleDegreeIndex];
+            return Tone.Frequency(note, "midi").toNote();
+        }
+
+        function playParticleSound(particle, eventType = "birth") {
+            if (!settings.soundEnabled || !soundInitialized || !polySynth) return;
+            if (eventType === "birth" && !settings.soundOnBirth) return;
+            if (eventType === "bounce" && !settings.soundOnBounce) return;
+
+            const note = getNoteInScale(1 - (particle.y / canvas.height)); // Y pos to pitch (inverted)
+            const velocity = Math.min(0.3 + (Math.abs(particle.vx) + Math.abs(particle.vy)) * 0.1, 1); // Speed to volume
+            const pan = (particle.x / canvas.width) * 2 - 1; // X pos to pan
+            
+            // Apply pan to the specific voice if possible, or use a stereo panner
+            // For PolySynth, individual voice panning is tricky without custom voice management.
+            // A simpler approach is to use a panner node before masterGain, but that affects ALL notes.
+            // For now, we'll use the note triggering with velocity. Panning is an advanced topic here.
+
+            polySynth.triggerAttackRelease(note, settings.soundRelease, Tone.now(), velocity);
+            
+            // To implement panning per note, you'd typically need one synth per potential note
+            // or a more complex routing setup if PolySynth voices can be individually panned.
+            // With FMSynth/Synth in PolySynth, direct panning of a voice isn't standard.
+            // We could create a Panner for each voice, but that's heavy.
+            // For now, pan is conceptual and not directly implemented per note in this simplified PolySynth setup.
+        }
+
+        // --- Particle Class ---
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * settings.particleSize + 1;
+                this.baseSize = this.size;
+                this.vx = (Math.random() - 0.5) * settings.particleMaxSpeed;
+                this.vy = (Math.random() - 0.5) * settings.particleMaxSpeed;
+                this.color = getRandomColor();
+                this.originalColor = this.color;
+                this.opacity = 1;
+                this.life = 0; // For effects like temporary color change
+                this.maxLife = 60; // Frames
+            }
+
+            update(micLevel = 0) {
+                this.life++;
+                if (this.life > this.maxLife) {
+                    this.color = this.originalColor; // Revert color
+                    this.size = this.baseSize; // Revert size
+                }
+
+                // Basic movement
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Opacity blink
+                if (settings.particleBlink) {
+                    this.opacity = Math.random() > 0.1 ? 1 : Math.random() * 0.5 + 0.2;
+                } else {
+                    this.opacity = 1;
+                }
+
+                // Mic influence
+                if (settings.micActive && micLevel > 0.01) {
+                    const micEffect = micLevel * settings.micSensitivity * 5;
+                    this.vx += (Math.random() - 0.5) * micEffect * 0.1;
+                    this.vy += (Math.random() - 0.5) * micEffect * 0.1;
+                    this.size = this.baseSize + micEffect * 0.5;
+                } else if (!settings.mouseSizeChange && this.life > this.maxLife) { // Revert size if mic not active and not under mouse influence
+                     this.size = this.baseSize;
+                }
+
+
+                // Speed limit
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > settings.particleMaxSpeed) {
+                    this.vx = (this.vx / speed) * settings.particleMaxSpeed;
+                    this.vy = (this.vy / speed) * settings.particleMaxSpeed;
+                }
+                
+                // Wall bounce
+                let bounced = false;
+                if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+                    this.vx *= -1;
+                    this.x = Math.max(this.size, Math.min(this.x, canvas.width - this.size)); // prevent sticking
+                    bounced = true;
+                }
+                if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+                    this.vy *= -1;
+                    this.y = Math.max(this.size, Math.min(this.y, canvas.height - this.size)); // prevent sticking
+                    bounced = true;
+                }
+                if (bounced) {
+                    playParticleSound(this, "bounce");
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.globalAlpha = this.opacity;
+                
+                if (settings.particleGlow) {
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 10 + this.size;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.fillStyle = this.color;
+                
+                const shape = settings.particleShape;
+                if (shape === 'circle') {
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                } else if (shape === 'square') {
+                    ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+                } else if (shape === 'triangle') {
+                    ctx.moveTo(this.x, this.y - this.size / Math.sqrt(3));
+                    ctx.lineTo(this.x - this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
+                    ctx.lineTo(this.x + this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
+                    ctx.closePath();
+                }
+                ctx.fill();
+                ctx.globalAlpha = 1; // Reset globalAlpha
+                ctx.shadowBlur = 0; // Reset shadow
+            }
+        }
+
+        // --- Color Palettes ---
+        const palettes = {
+            neon: ["#39FF14", "#FF10F0", "#10F0FF", "#F0FF10", "#FF8C00"],
+            pastel: ["#A0E7E5", "#F8C4B4", "#FFDEB4", "#B4F8C8", "#E5B4F8"],
+            monochrome: ["#FFFFFF", "#CCCCCC", "#999999", "#666666", "#333333"],
+            fire: ["#FF4500", "#FFA500", "#FFD700", "#FF6347", "#DC143C"],
+            ocean: ["#00BFFF", "#1E90FF", "#00CED1", "#4682B4", "#40E0D0"],
+            glitchColors: ["#FF00FF", "#00FFFF", "#FFFF00", "#FF0000", "#00FF00", "#0000FF"],
+            electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"]
+        };
+        let currentRainbowHue = 0;
+
+        function getRandomColor() {
+            const paletteName = settings.particleColorPalette;
+            if (paletteName === "rainbow") {
+                currentRainbowHue = (currentRainbowHue + 1) % 360;
+                return `hsl(${currentRainbowHue}, 100%, 60%)`;
+            }
+            const currentPalette = palettes[paletteName] || palettes.neon;
+            return currentPalette[Math.floor(Math.random() * currentPalette.length)];
+        }
+
+        // --- Initialization and Main Loop ---
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < settings.particleCount; i++) {
+                const p = new Particle(Math.random() * canvas.width, Math.random() * canvas.height);
+                particles.push(p);
+                playParticleSound(p, "birth");
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if(particles.length > 0) initParticles(); // Re-initialize to fit new screen
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let mouse = { x: undefined, y: undefined, down: false, button: -1 };
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.offsetX;
+            mouse.y = e.offsetY;
+        });
+        canvas.addEventListener('mousedown', (e) => {
+            mouse.down = true;
+            mouse.button = e.button; // 0 for left, 1 for middle, 2 for right
+            handleMouseClick();
+        });
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+            mouse.button = -1;
+        });
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = undefined;
+            mouse.y = undefined;
+            mouse.down = false;
+        });
+        // Prevent context menu on right click on canvas
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        function handleMouseClick() {
+            if (mouse.x === undefined || mouse.y === undefined) return;
+
+            if (mouse.button === 0) { // Left click: Explosion
+                particles.forEach(p => {
+                    const dx = p.x - mouse.x;
+                    const dy = p.y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < settings.mouseInfluenceRadius) {
+                        const force = (settings.mouseInfluenceRadius - dist) / settings.mouseInfluenceRadius * 5 * settings.mouseForce;
+                        p.vx += (dx / dist) * force;
+                        p.vy += (dy / dist) * force;
+                    }
+                });
+            } else if (mouse.button === 2) { // Right click: Generate particles
+                for (let i = 0; i < 5; i++) { // Generate a few
+                    if (particles.length < 1000) { // Max cap
+                        const p = new Particle(mouse.x + (Math.random()-0.5)*20, mouse.y + (Math.random()-0.5)*20);
+                        particles.push(p);
+                        playParticleSound(p, "birth");
+                    }
+                }
+            }
+        }
+        
+        function applyMouseInteractions() {
+            if (mouse.x === undefined || mouse.y === undefined || mouse.down) return; // Only apply hover effects if mouse is not clicking
+
+            particles.forEach(p => {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < settings.mouseInfluenceRadius) {
+                    p.life = 0; // Reset life for effects
+                    const forceFactor = (settings.mouseInfluenceRadius - dist) / settings.mouseInfluenceRadius;
+                    const force = forceFactor * settings.mouseForce;
+
+                    if (settings.mouseEffect === "attract") {
+                        p.vx -= (dx / dist) * force;
+                        p.vy -= (dy / dist) * force;
+                    } else if (settings.mouseEffect === "repel") {
+                        p.vx += (dx / dist) * force;
+                        p.vy += (dy / dist) * force;
+                    } else if (settings.mouseEffect === "vortex") {
+                        const angle = Math.atan2(dy, dx);
+                        p.vx -= Math.sin(angle) * force * 1.5; // Stronger tangential force for vortex
+                        p.vy += Math.cos(angle) * force * 1.5;
+                        // Slight pull towards center too
+                        p.vx -= (dx / dist) * force * 0.2;
+                        p.vy -= (dy / dist) * force * 0.2;
+                    }
+
+                    if (settings.mouseColorChange) {
+                        // Interpolate towards a bright color, e.g., white or a vibrant one
+                        const targetColor = { r: 255, g: 255, b: 255 }; // White
+                        // This is a simplified color change, could be more sophisticated
+                        p.color = `rgba(${targetColor.r}, ${targetColor.g}, ${targetColor.b}, ${1 - dist / settings.mouseInfluenceRadius})`;
+                    }
+                    if (settings.mouseSizeChange) {
+                        p.size = p.baseSize + forceFactor * settings.particleSize * 1.5;
+                    }
+                }
+            });
+        }
+
+        async function setupMicrophone() {
+            if (!settings.micActive) {
+                if (microphone) {
+                    microphone.dispose();
+                    microphone = null;
+                    analyserNode = null;
+                    showMessage("Micrófono desactivado.", 1500);
+                }
+                ui.micSensitivity.disabled = true;
+                return;
+            }
+            
+            if (!microphone) {
+                try {
+                    if (!soundInitialized) await initializeSound(); // Ensure Tone.js is started
+                    microphone = new Tone.UserMedia();
+                    await microphone.open();
+                    analyserNode = new Tone.Analyser('waveform', 1024); // Use 'waveform' or 'fft'
+                    microphone.connect(analyserNode);
+                    showMessage("Micrófono activado. Por favor, permite el acceso.", 3000);
+                    ui.micSensitivity.disabled = false;
+                } catch (err) {
+                    console.error("Error al acceder al micrófono:", err);
+                    showMessage("Error al acceder al micrófono. Revisa los permisos.", 3000);
+                    ui.micActive.checked = false; // Uncheck if failed
+                    settings.micActive = false;
+                    ui.micSensitivity.disabled = true;
+                    return;
+                }
+            }
+        }
+        
+        function getMicLevel() {
+            if (!settings.micActive || !analyserNode) return 0;
+            const values = analyserNode.getValue(); // This is an array of values
+            // For 'waveform', values are between -1 and 1. We need RMS or peak.
+            // Simple average of absolute values for a rough 'volume'
+            let sum = 0;
+            for (let i = 0; i < values.length; i++) {
+                sum += Math.abs(values[i]);
+            }
+            return sum / values.length;
+        }
+        
+        let backgroundHue = 0; // For pulsing background
+        let zoomFactor = 1;
+        let rotationFactor = 0;
+
+        function animate() {
+            ctx.save(); // Save base context state
+
+            // --- Background Effects ---
+            // Trail effect by drawing a semi-transparent rectangle
+            ctx.fillStyle = `rgba(${hexToRgb(settings.bgColor).r}, ${hexToRgb(settings.bgColor).g}, ${hexToRgb(settings.bgColor).b}, ${1 - settings.trailOpacity})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (settings.bgPulsing) {
+                backgroundHue = (backgroundHue + settings.bgPulseSpeed) % 360;
+                const pulseLightness = 5 + Math.sin(Date.now() * 0.001 * settings.bgPulseSpeed) * 5; // 5-15% lightness
+                ctx.fillStyle = `hsla(${backgroundHue}, 70%, ${pulseLightness}%, ${settings.trailOpacity * 0.5})`; // Low opacity fill
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Additive Blending
+            ctx.globalCompositeOperation = settings.additiveBlending ? 'lighter' : 'source-over';
+            
+            // Zoom/Rotate Effect (applied before kaleidoscope and particles)
+            if (settings.zoomEffect) {
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                zoomFactor += settings.zoomEffectIntensity * (Math.sin(Date.now() * 0.0005) > 0 ? 1 : -1); // Oscillating zoom
+                zoomFactor = Math.max(0.5, Math.min(zoomFactor, 1.5)); // Clamp zoom
+                rotationFactor += settings.zoomEffectIntensity * 20; // Rotate continuously
+                ctx.scale(zoomFactor, zoomFactor);
+                ctx.rotate(rotationFactor * Math.PI / 180);
+                ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            }
+
+
+            // --- Kaleidoscope Effect ---
+            if (settings.kaleidoscopeActive) {
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                const angleIncrement = (Math.PI * 2) / settings.kaleidoscopeSegments;
+                for (let i = 0; i < settings.kaleidoscopeSegments; i++) {
+                    ctx.rotate(angleIncrement);
+                    if (settings.kaleidoscopeMirror && i % 2 === 0) {
+                        ctx.save();
+                        ctx.scale(1, -1);
+                        drawParticles();
+                        ctx.restore();
+                    } else {
+                        drawParticles();
+                    }
+                }
+                ctx.restore();
+            } else {
+                drawParticles(); // Draw particles normally if kaleidoscope is off
+            }
+            
+            // Reset global composite operation after particles are drawn
+            ctx.globalCompositeOperation = 'source-over';
+
+
+            // --- Background Glitch (drawn on top of everything else or particles) ---
+            if (settings.bgGlitch && Math.random() < settings.bgGlitchIntensity * 5) { // Trigger glitch occasionally
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const w = Math.random() * canvas.width * 0.2 + 20; // Min width 20
+                const h = Math.random() * 10 + 1; // Thin lines
+                ctx.fillStyle = `rgba(${Math.random()*255}, ${Math.random()*255}, ${Math.random()*255}, ${Math.random()*0.5 + 0.2})`;
+                if (Math.random() > 0.5) { // Horizontal or vertical
+                    ctx.fillRect(x - w/2, y - h/2, w, h);
+                } else {
+                    ctx.fillRect(x - h/2, y - w/2, h, w);
+                }
+
+                // Occasional block shift (more intensive)
+                if (Math.random() < 0.1) {
+                    const sx = Math.random() * (canvas.width - 100);
+                    const sy = Math.random() * (canvas.height - 50);
+                    const sw = Math.random() * 100 + 50;
+                    const sh = Math.random() * 50 + 20;
+                    const dx = sx + (Math.random() - 0.5) * 20;
+                    const dy = sy + (Math.random() - 0.5) * 20;
+                    try { // getImageData can throw security errors on tainted canvases
+                        const imageData = ctx.getImageData(sx, sy, sw, sh);
+                        ctx.putImageData(imageData, dx, dy);
+                    } catch(e) { /* console.warn("Glitch block shift failed:", e) */ }
+                }
+            }
+            
+            ctx.restore(); // Restore base context state
+
+            requestAnimationFrame(animate);
+        }
+
+        function drawParticles() {
+            const micLvl = getMicLevel();
+            applyMouseInteractions();
+            particles.forEach(p => {
+                p.update(micLvl);
+                p.draw();
+            });
+        }
+        
+        function hexToRgb(hex) {
+            let r = 0, g = 0, b = 0;
+            if (hex.length == 4) { // #RGB
+                r = parseInt(hex[1] + hex[1], 16);
+                g = parseInt(hex[2] + hex[2], 16);
+                b = parseInt(hex[3] + hex[3], 16);
+            } else if (hex.length == 7) { // #RRGGBB
+                r = parseInt(hex[1] + hex[2], 16);
+                g = parseInt(hex[3] + hex[4], 16);
+                b = parseInt(hex[5] + hex[6], 16);
+            }
+            return { r, g, b };
+        }
+        
+        // --- UI Control Event Listeners ---
+        function setupEventListeners() {
+            Object.keys(ui).forEach(key => {
+                const element = ui[key];
+                if (element && (element.tagName === 'INPUT' || element.tagName === 'SELECT')) {
+                    const eventType = (element.type === 'range' || element.type === 'color') ? 'input' : 'change';
+                    element.addEventListener(eventType, () => {
+                        updateSettingsFromUI();
+                        if (ui[key + 'Value']) { // Update slider value displays
+                             if (key === 'soundRootFreq') {
+                                ui[key + 'Value'].textContent = midiToNoteName(settings[key]);
+                            } else if (key === 'masterVolume') {
+                                ui[key + 'Value'].textContent = settings[key] + ' dB';
+                            } else {
+                                ui[key + 'Value'].textContent = settings[key];
+                            }
+                        }
+                        if (key === 'micActive') setupMicrophone();
+                        if (key.startsWith('sound') || key === 'masterVolume') updateSoundSettings();
+                    });
+                }
+            });
+
+            ui.resetBtn.addEventListener('click', resetAllSettings);
+            ui.fullscreenBtn.addEventListener('click', toggleFullScreen);
+            
+            ui.toggleControlsBtn.addEventListener('click', () => {
+                ui.controlsPanel.classList.toggle('hidden');
+                ui.toggleControlsBtn.classList.toggle('panel-visible');
+                if (ui.controlsPanel.classList.contains('hidden')) {
+                    ui.toggleControlsBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                } else {
+                    ui.toggleControlsBtn.innerHTML = '<i class="fas fa-times"></i>';
+                }
+            });
+
+            // Accordion for control groups
+            document.querySelectorAll('.control-group-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    content.classList.toggle('open');
+                    const arrow = header.querySelector('.toggle-arrow i');
+                    arrow.classList.toggle('fa-chevron-down');
+                    arrow.classList.toggle('fa-chevron-up');
+                });
+            });
+        }
+
+        function resetAllSettings() {
+            settings = { ...defaultSettings };
+            updateUIFromSettings();
+            initParticles(); // Re-initialize particles with default count etc.
+            if(soundInitialized) updateSoundSettings(); // Reset sound params
+            if(settings.micActive) setupMicrophone(); else if(microphone) microphone.close();
+            stopRandomizer(); // Stop randomizer if it was active
+            ui.randomizerActive.checked = false; 
+            showMessage("Configuración reiniciada a los valores por defecto.", 2000);
+        }
+        
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showMessage(`Error al entrar en pantalla completa: ${err.message}`, 3000);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function showMessage(message, duration = 3000) {
+            ui.messageBox.textContent = message;
+            ui.messageBox.style.display = 'block';
+            setTimeout(() => {
+                ui.messageBox.style.display = 'none';
+            }, duration);
+        }
+
+        // --- Randomizer ---
+        function startRandomizer() {
+            if (randomizerIntervalId) clearInterval(randomizerIntervalId);
+            randomizerIntervalId = setInterval(randomizeParameters, settings.randomizerInterval * 1000);
+            showMessage("Aleatorizador activado.", 1500);
+        }
+
+        function stopRandomizer() {
+            if (randomizerIntervalId) {
+                clearInterval(randomizerIntervalId);
+                randomizerIntervalId = null;
+                showMessage("Aleatorizador desactivado.", 1500);
+            }
+        }
+        
+        function randomizeParameters() {
+            if (!settings.randomizerActive) return;
+
+            // Randomize visual particle settings
+            settings.particleCount = Math.floor(Math.random() * (parseInt(ui.particleCount.max) - parseInt(ui.particleCount.min) +1 )) + parseInt(ui.particleCount.min);
+            settings.particleSize = Math.random() * (parseFloat(ui.particleSize.max) - parseFloat(ui.particleSize.min)) + parseFloat(ui.particleSize.min);
+            const shapes = Array.from(ui.particleShape.options).map(opt => opt.value);
+            settings.particleShape = shapes[Math.floor(Math.random() * shapes.length)];
+            const palettesKeys = Object.keys(palettes);
+            settings.particleColorPalette = palettesKeys[Math.floor(Math.random() * palettesKeys.length)];
+            settings.particleGlow = Math.random() > 0.5;
+            settings.particleBlink = Math.random() > 0.5;
+            settings.particleMaxSpeed = Math.random() * (parseFloat(ui.particleMaxSpeed.max) - parseFloat(ui.particleMaxSpeed.min)) + parseFloat(ui.particleMaxSpeed.min);
+
+            // Randomize background and effects
+            // settings.bgColor = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`; // Full random color can be jarring
+            settings.trailOpacity = Math.random();
+            settings.bgPulsing = Math.random() > 0.5;
+            settings.bgPulseSpeed = Math.random() * (parseFloat(ui.bgPulseSpeed.max) - parseFloat(ui.bgPulseSpeed.min)) + parseFloat(ui.bgPulseSpeed.min);
+            settings.bgGlitch = Math.random() > 0.3;
+            settings.bgGlitchIntensity = Math.random() * (parseFloat(ui.bgGlitchIntensity.max) - parseFloat(ui.bgGlitchIntensity.min)) + parseFloat(ui.bgGlitchIntensity.min);
+            settings.zoomEffect = Math.random() > 0.5;
+            settings.zoomEffectIntensity = Math.random() * (parseFloat(ui.zoomEffectIntensity.max) - parseFloat(ui.zoomEffectIntensity.min)) + parseFloat(ui.zoomEffectIntensity.min);
+            settings.additiveBlending = Math.random() > 0.5;
+
+            // Randomize sound parameters (if sound is enabled)
+            if (settings.soundEnabled && soundInitialized) {
+                const waveforms = Array.from(ui.soundWaveform.options).map(opt => opt.value);
+                settings.soundWaveform = waveforms[Math.floor(Math.random() * waveforms.length)];
+                const scalesKeys = Array.from(ui.soundScale.options).map(opt => opt.value);
+                settings.soundScale = scalesKeys[Math.floor(Math.random() * scalesKeys.length)];
+                settings.soundRootFreq = Math.floor(Math.random() * (parseInt(ui.soundRootFreq.max) - parseInt(ui.soundRootFreq.min) + 1)) + parseInt(ui.soundRootFreq.min);
+                settings.soundOctaveRange = Math.floor(Math.random() * (parseInt(ui.soundOctaveRange.max) - parseInt(ui.soundOctaveRange.min) + 1)) + parseInt(ui.soundOctaveRange.min);
+                settings.soundRichTimbre = Math.random() > 0.5;
+                settings.soundAttack = Math.random() * (parseFloat(ui.soundAttack.max) - parseFloat(ui.soundAttack.min)) + parseFloat(ui.soundAttack.min);
+                settings.soundRelease = Math.random() * (parseFloat(ui.soundRelease.max) - parseFloat(ui.soundRelease.min)) + parseFloat(ui.soundRelease.min);
+                
+                settings.soundReverb = Math.random() > 0.5;
+                settings.soundReverbWet = Math.random() * (parseFloat(ui.soundReverbWet.max) - parseFloat(ui.soundReverbWet.min)) + parseFloat(ui.soundReverbWet.min);
+                settings.soundDelay = Math.random() > 0.5;
+                settings.soundDelayTime = Math.random() * (parseFloat(ui.soundDelayTime.max) - parseFloat(ui.soundDelayTime.min)) + parseFloat(ui.soundDelayTime.min);
+                settings.soundDelayFeedback = Math.random() * (parseFloat(ui.soundDelayFeedback.max) - parseFloat(ui.soundDelayFeedback.min)) + parseFloat(ui.soundDelayFeedback.min);
+                settings.soundPhaser = Math.random() > 0.5;
+                settings.soundPhaserFreq = Math.random() * (parseFloat(ui.soundPhaserFreq.max) - parseFloat(ui.soundPhaserFreq.min)) + parseFloat(ui.soundPhaserFreq.min);
+                updateSoundSettings();
+            }
+            
+            // Randomize kaleidoscope
+            settings.kaleidoscopeActive = Math.random() > 0.4;
+            settings.kaleidoscopeSegments = Math.floor(Math.random() * (parseInt(ui.kaleidoscopeSegments.max) - parseInt(ui.kaleidoscopeSegments.min) + 1)) + parseInt(ui.kaleidoscopeSegments.min);
+            settings.kaleidoscopeMirror = Math.random() > 0.5;
+
+            // IMPORTANT: Do NOT randomize mouse/mic direct interaction parameters like mouseEffect, mouseInfluenceRadius, mouseForce, micSensitivity.
+            // These should remain under user control even when randomizer is active. The randomizer affects the *base* particle system and effects.
+            
+            initParticles(); // Re-init with new count etc.
+            updateUIFromSettings(); // Reflect changes in UI
+            showMessage("Parámetros aleatorizados.", 1000);
+        }
+        
+        ui.randomizerActive.addEventListener('change', () => {
+            settings.randomizerActive = ui.randomizerActive.checked;
+            if (settings.randomizerActive) {
+                startRandomizer();
+            } else {
+                stopRandomizer();
+            }
+        });
+        ui.randomizerInterval.addEventListener('change', () => {
+            settings.randomizerInterval = parseInt(ui.randomizerInterval.value);
+            if (settings.randomizerActive) { // Restart with new interval
+                startRandomizer();
+            }
+        });
+        
+        // --- Document Ready ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUIFromSettings(); // Load defaults into UI
+            setupEventListeners();
+            resizeCanvas(); // Initial size
+            initParticles();
+            animate();
+            
+            // Show panel by default
+            ui.controlsPanel.classList.remove('hidden');
+            ui.toggleControlsBtn.classList.add('panel-visible');
+            ui.toggleControlsBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+            // Open first few control groups by default for better UX
+            const groupsToOpen = [0, 1, 2, 3]; // Indices of groups
+            document.querySelectorAll('.control-group').forEach((group, index) => {
+                if (groupsToOpen.includes(index)) {
+                    group.querySelector('.control-group-content').classList.add('open');
+                    const arrow = group.querySelector('.control-group-header .toggle-arrow i');
+                    arrow.classList.remove('fa-chevron-down');
+                    arrow.classList.add('fa-chevron-up');
+                }
+            });
+            
+            // Attempt to initialize sound immediately IF sound is enabled by default
+            // However, it's better to init on first user interaction (like enabling sound checkbox)
+            // or if soundEnabled is true in defaultSettings
+            if (settings.soundEnabled) {
+                 // A button could be used to "Start Audio" to satisfy user gesture requirement robustly
+                setTimeout(initializeSound, 100); // Small delay to ensure Tone.js is loaded
+            }
+            ui.soundEnabled.addEventListener('change', () => {
+                if (settings.soundEnabled && !soundInitialized) {
+                    initializeSound();
+                }
+            });
+
+        });
+
+    </script>
+</body>
+</html>
