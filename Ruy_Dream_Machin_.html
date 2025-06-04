@@ -241,7 +241,7 @@
             <div class="control-group-header"><i class="fas fa-atom"></i> Partículas <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
             <div class="control-group-content">
                 <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">80</span></label>
-                <input type="range" id="particleCount" min="10" max="500" value="80">
+                <input type="range" id="particleCount" min="10" max="80" value="80">
                 
                 <label for="particleSize">Tamaño Base: <span id="particleSizeValue" class="value-display">3</span></label>
                 <input type="range" id="particleSize" min="1" max="20" value="3">
@@ -251,6 +251,8 @@
                     <option value="circle" selected>Círculo</option>
                     <option value="square">Cuadrado</option>
                     <option value="triangle">Triángulo</option>
+                    <option value="line">Línea</option>
+                    <option value="star">Estrella</option>
                 </select>
 
                 <label for="particleColorPalette">Paleta de Colores:</label>
@@ -274,6 +276,17 @@
                 <label class="checkbox-label">
                     <input type="checkbox" id="particleIndividualRandom"> Aleatorización Individual
                 </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleSizeRandom"> Tamaño Aleatorio
+                </label>
+                <label for="particleBehavior">Comportamiento:</label>
+                <select id="particleBehavior">
+                    <option value="normal" selected>Normal</option>
+                    <option value="erratic">Errático Individual</option>
+                    <option value="chaos">Caos Intermitente</option>
+                    <option value="orbital">Danza Orbital</option>
+                    <option value="coral">Movimiento Coral</option>
+                </select>
                  <label for="particleMaxSpeed">Velocidad Máxima: <span id="particleMaxSpeedValue" class="value-display">2</span></label>
                 <input type="range" id="particleMaxSpeed" min="0.1" max="10" step="0.1" value="2">
             </div>
@@ -438,6 +451,11 @@
                 <label for="soundPhaserFreq">Velocidad Phaser: <span id="soundPhaserFreqValue" class="value-display">0.5</span> Hz</label>
                 <input type="range" id="soundPhaserFreq" min="0.1" max="5" step="0.1" value="0.5">
             </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundDistortion"> Distorsión
+                </label>
+                <label for="soundDistortionAmount">Nivel Distorsión: <span id="soundDistortionAmountValue" class="value-display">0.2</span></label>
+                <input type="range" id="soundDistortionAmount" min="0" max="1" step="0.01" value="0.2">
         </div>
 
         <!-- Kaleidoscope -->
@@ -483,7 +501,7 @@
         let randomizerIntervalId = null;
 
         // --- Tone.js Setup ---
-        let masterGain, polySynth, reverb, delay, phaser;
+        let masterGain, polySynth, reverb, delay, phaser, distortion;
         let soundInitialized = false;
 
         const midiNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -508,6 +526,8 @@
             mouseForce: 0.5,
             mouseColorChange: true,
             mouseSizeChange: true,
+            particleSizeRandom: false,
+            particleBehavior: "normal",
             micActive: false,
             micSensitivity: 1,
             bgColor: "#000000",
@@ -540,6 +560,8 @@
             soundPhaser: false,
             soundPhaserFreq: 0.5,
             kaleidoscopeActive: false,
+            soundDistortion: false,
+            soundDistortionAmount: 0.2,
             kaleidoscopeSegments: 6,
             kaleidoscopeMirror: true,
             randomizerActive: false,
@@ -561,6 +583,8 @@
             particleIndividualRandom: document.getElementById('particleIndividualRandom'),
             particleMaxSpeed: document.getElementById('particleMaxSpeed'),
             particleMaxSpeedValue: document.getElementById('particleMaxSpeedValue'),
+            particleSizeRandom: document.getElementById('particleSizeRandom'),
+            particleBehavior: document.getElementById('particleBehavior'),
             mouseEffect: document.getElementById('mouseEffect'),
             mouseInfluenceRadius: document.getElementById('mouseInfluenceRadius'),
             mouseInfluenceRadiusValue: document.getElementById('mouseInfluenceRadiusValue'),
@@ -615,6 +639,9 @@
             soundPhaserFreq: document.getElementById('soundPhaserFreq'),
             soundPhaserFreqValue: document.getElementById('soundPhaserFreqValue'),
             kaleidoscopeActive: document.getElementById('kaleidoscopeActive'),
+            soundDistortion: document.getElementById("soundDistortion"),
+            soundDistortionAmount: document.getElementById("soundDistortionAmount"),
+            soundDistortionAmountValue: document.getElementById("soundDistortionAmountValue"),
             kaleidoscopeSegments: document.getElementById('kaleidoscopeSegments'),
             kaleidoscopeSegmentsValue: document.getElementById('kaleidoscopeSegmentsValue'),
             kaleidoscopeMirror: document.getElementById('kaleidoscopeMirror'),
@@ -695,10 +722,10 @@
                 frequency: settings.soundPhaserFreq,
                 octaves: 3,
                 stages: 10,
-                Q: 5,
                 baseFrequency: 350,
                 wet: 0.5 // Fixed wet, enable/disable via connection
             }).connect(masterGain);
+            distortion = new Tone.Distortion({distortion: settings.soundDistortionAmount, oversample: "4x", wet: 0.5}).connect(masterGain);
 
             configureToneSynth();
             soundInitialized = true;
@@ -734,6 +761,7 @@
             if (settings.soundPhaser) { cp.connect(phaser); cp = phaser; }
             if (settings.soundDelay) { cp.connect(delay); cp = delay; }
             if (settings.soundReverb) { cp.connect(reverb); cp = reverb; }
+            if (settings.soundDistortion) { cp.connect(distortion); cp = distortion; }
             cp.connect(masterGain);
         }
 
@@ -755,6 +783,8 @@
             phaser.frequency.rampTo(settings.soundPhaserFreq, 0.1);
             phaser.wet.rampTo(settings.soundPhaser ? 0.5 : 0, 0.1); // Enable/disable phaser via wet
 
+            distortion.distortion = settings.soundDistortionAmount;
+            distortion.wet.rampTo(settings.soundDistortion ? 0.5 : 0, 0.1);
         }
         
         const scales = {
@@ -835,9 +865,33 @@
                         this.originalColor = this.color;
                     }
                     if (Math.random() < 0.01) {
-                        const shapes = ['circle', 'square', 'triangle'];
+                        const shapes = ['circle','square','triangle','line','star'];
                         this.shape = shapes[Math.floor(Math.random()*shapes.length)];
                     }
+                }
+                if (settings.particleSizeRandom) {
+                    this.size = this.baseSize * (0.75 + Math.random() * 0.5);
+                }
+                switch(settings.particleBehavior){
+                    case "erratic":
+                        this.vx += (Math.random()-0.5)*0.4;
+                        this.vy += (Math.random()-0.5)*0.4;
+                        break;
+                    case "chaos":
+                        if(Math.random()<0.05){
+                            this.vx = (Math.random()-0.5)*settings.particleMaxSpeed*2;
+                            this.vy = (Math.random()-0.5)*settings.particleMaxSpeed*2;
+                        }
+                        break;
+                    case "orbital":
+                        const ang = Math.atan2(this.y-canvas.height/2, this.x-canvas.width/2);
+                        this.vx += -Math.sin(ang)*0.05;
+                        this.vy += Math.cos(ang)*0.05;
+                        break;
+                    case "coral":
+                        this.vx += Math.sin((this.y+Date.now()*0.001))*0.02;
+                        this.vy += Math.cos((this.x+Date.now()*0.001))*0.02;
+                        break;
                 }
 
                 // Basic movement
@@ -900,19 +954,32 @@
                 ctx.fillStyle = this.color;
                 
                 const shape = this.shape;
-                if (shape === 'circle') {
+                if (shape === "circle") {
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                } else if (shape === 'square') {
+                } else if (shape === "square") {
                     ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-                } else if (shape === 'triangle') {
+                } else if (shape === "triangle") {
                     ctx.moveTo(this.x, this.y - this.size / Math.sqrt(3));
                     ctx.lineTo(this.x - this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
                     ctx.lineTo(this.x + this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
                     ctx.closePath();
+                } else if (shape === "line") {
+                    ctx.moveTo(this.x - this.size, this.y);
+                    ctx.lineTo(this.x + this.size, this.y);
+                } else if (shape === "star") {
+                    const spikes = 5;
+                    const step = Math.PI / spikes;
+                    ctx.moveTo(this.x + Math.cos(0) * this.size, this.y + Math.sin(0) * this.size);
+                    for (let i = 0; i < 2 * spikes; i++) {
+                        const rad = i % 2 === 0 ? this.size : this.size * 0.5;
+                        const ang = i * step;
+                        ctx.lineTo(this.x + Math.cos(ang) * rad, this.y + Math.sin(ang) * rad);
+                    }
+                    ctx.closePath();
                 }
                 ctx.fill();
-                ctx.globalAlpha = 1; // Reset globalAlpha
-                ctx.shadowBlur = 0; // Reset shadow
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
             }
         }
 
@@ -941,7 +1008,7 @@
         // --- Initialization and Main Loop ---
         function initParticles() {
             particles = [];
-            for (let i = 0; i < settings.particleCount; i++) {
+            for (let i = 0; i < Math.min(settings.particleCount,80); i++) {
                 const p = new Particle(Math.random() * canvas.width, Math.random() * canvas.height);
                 particles.push(p);
                 playParticleSound(p, "birth");
@@ -993,7 +1060,7 @@
                 });
             } else if (mouse.button === 2) { // Right click: Generate particles
                 for (let i = 0; i < 5; i++) { // Generate a few
-                    if (particles.length < 1000) { // Max cap
+                    if (particles.length < 80) { // Max cap
                         const p = new Particle(mouse.x + (Math.random()-0.5)*20, mouse.y + (Math.random()-0.5)*20);
                         particles.push(p);
                         playParticleSound(p, "birth");
@@ -1307,6 +1374,9 @@
             settings.particleColorPalette = palettesKeys[Math.floor(Math.random() * palettesKeys.length)];
             settings.particleGlow = Math.random() > 0.5;
             settings.particleBlink = Math.random() > 0.5;
+            settings.particleSizeRandom = Math.random() > 0.5;
+            const behaviors = ["normal","erratic","chaos","orbital","coral"];
+            settings.particleBehavior = behaviors[Math.floor(Math.random()*behaviors.length)];
             settings.particleIndividualRandom = Math.random() > 0.5;
             settings.particleMaxSpeed = Math.random() * (parseFloat(ui.particleMaxSpeed.max) - parseFloat(ui.particleMaxSpeed.min)) + parseFloat(ui.particleMaxSpeed.min);
 
@@ -1339,6 +1409,8 @@
                 settings.soundDelayTime = Math.random() * (parseFloat(ui.soundDelayTime.max) - parseFloat(ui.soundDelayTime.min)) + parseFloat(ui.soundDelayTime.min);
                 settings.soundDelayFeedback = Math.random() * (parseFloat(ui.soundDelayFeedback.max) - parseFloat(ui.soundDelayFeedback.min)) + parseFloat(ui.soundDelayFeedback.min);
                 settings.soundPhaser = Math.random() > 0.5;
+                settings.soundDistortion = Math.random() > 0.5;
+                settings.soundDistortionAmount = Math.random();
                 settings.soundPhaserFreq = Math.random() * (parseFloat(ui.soundPhaserFreq.max) - parseFloat(ui.soundPhaserFreq.min)) + parseFloat(ui.soundPhaserFreq.min);
                 updateSoundSettings();
             }
