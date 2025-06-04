@@ -338,6 +338,9 @@
 
                 <label for="trailOpacity">Opacidad Estela (Trail): <span id="trailOpacityValue" class="value-display">0.1</span></label>
                 <input type="range" id="trailOpacity" min="0" max="1" step="0.01" value="0.1">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="trailColorShift"> Estela Multicolor
+                </label>
                 
                 <label class="checkbox-label">
                     <input type="checkbox" id="bgPulsing"> Fondo Pulsante
@@ -487,6 +490,13 @@
                     <option value="15">15s</option>
                     <option value="30">30s</option>
                 </select>
+                <label for="transitionType">Tipo de Transición:</label>
+                <select id="transitionType">
+                    <option value="none" selected>Ninguna</option>
+                    <option value="fade">Desvanecer</option>
+                    <option value="slide">Deslizar</option>
+                </select>
+                <button id="randomizeNowBtn">Aleatorizar Ahora</button>
             </div>
         </div>
 
@@ -499,10 +509,15 @@
         let particles = [];
         let audioContext, analyserNode, microphone, dataArray;
         let randomizerIntervalId = null;
+        let fadeProgress = 0;
+        let slideProgress = 0;
+        const transitionCanvas = document.createElement('canvas');
+        const transitionCtx = transitionCanvas.getContext('2d');
 
         // --- Tone.js Setup ---
         let masterGain, polySynth, reverb, delay, phaser, distortion;
         let soundInitialized = false;
+        let prevSoundEnabled = null;
 
         const midiNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         function midiToNoteName(midiNum) {
@@ -565,7 +580,9 @@
             kaleidoscopeSegments: 6,
             kaleidoscopeMirror: true,
             randomizerActive: false,
-            randomizerInterval: 10
+            randomizerInterval: 10,
+            transitionType: 'none',
+            trailColorShift: false
         };
 
         let settings = { ...defaultSettings };
@@ -596,8 +613,9 @@
             micSensitivity: document.getElementById('micSensitivity'),
             micSensitivityValue: document.getElementById('micSensitivityValue'),
             bgColor: document.getElementById('bgColor'),
-            trailOpacity: document.getElementById('trailOpacity'),
-            trailOpacityValue: document.getElementById('trailOpacityValue'),
+           trailOpacity: document.getElementById('trailOpacity'),
+           trailOpacityValue: document.getElementById('trailOpacityValue'),
+            trailColorShift: document.getElementById('trailColorShift'),
             bgPulsing: document.getElementById('bgPulsing'),
             bgPulseSpeed: document.getElementById('bgPulseSpeed'),
             bgPulseSpeedValue: document.getElementById('bgPulseSpeedValue'),
@@ -645,8 +663,10 @@
             kaleidoscopeSegments: document.getElementById('kaleidoscopeSegments'),
             kaleidoscopeSegmentsValue: document.getElementById('kaleidoscopeSegmentsValue'),
             kaleidoscopeMirror: document.getElementById('kaleidoscopeMirror'),
-            randomizerActive: document.getElementById('randomizerActive'),
-            randomizerInterval: document.getElementById('randomizerInterval'),
+           randomizerActive: document.getElementById('randomizerActive'),
+           randomizerInterval: document.getElementById('randomizerInterval'),
+            randomizeNowBtn: document.getElementById('randomizeNowBtn'),
+            transitionType: document.getElementById('transitionType'),
             messageBox: document.getElementById('messageBox'),
             controlsPanel: document.getElementById('controlsPanel'),
             toggleControlsBtn: document.getElementById('toggleControlsBtn'),
@@ -994,6 +1014,7 @@
             electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"]
         };
         let currentRainbowHue = 0;
+        let trailHue = 0;
 
         function getRandomColor() {
             const paletteName = settings.particleColorPalette;
@@ -1117,10 +1138,16 @@
                     analyserNode = null;
                     showMessage("Micrófono desactivado.", 1500);
                 }
+                if (prevSoundEnabled !== null) {
+                    settings.soundEnabled = prevSoundEnabled;
+                    prevSoundEnabled = null;
+                    updateUIFromSettings();
+                    if(soundInitialized) updateSoundSettings();
+                }
                 ui.micSensitivity.disabled = true;
                 return;
             }
-            
+
             if (!microphone) {
                 try {
                     if (!soundInitialized) await initializeSound(); // Ensure Tone.js is started
@@ -1130,6 +1157,12 @@
                     microphone.connect(analyserNode);
                     showMessage("Micrófono activado. Por favor, permite el acceso.", 3000);
                     ui.micSensitivity.disabled = false;
+                    if (prevSoundEnabled === null) {
+                        prevSoundEnabled = settings.soundEnabled;
+                        settings.soundEnabled = false;
+                        updateUIFromSettings();
+                        if(soundInitialized) updateSoundSettings();
+                    }
                 } catch (err) {
                     console.error("Error al acceder al micrófono:", err);
                     showMessage("Error al acceder al micrófono. Revisa los permisos.", 3000);
@@ -1162,7 +1195,12 @@
 
             // --- Background Effects ---
             // Trail effect by drawing a semi-transparent rectangle
-            ctx.fillStyle = `rgba(${hexToRgb(settings.bgColor).r}, ${hexToRgb(settings.bgColor).g}, ${hexToRgb(settings.bgColor).b}, ${1 - settings.trailOpacity})`;
+            if (settings.trailColorShift) {
+                trailHue = (trailHue + 1) % 360;
+                ctx.fillStyle = `hsla(${trailHue}, 100%, 10%, ${1 - settings.trailOpacity})`;
+            } else {
+                ctx.fillStyle = `rgba(${hexToRgb(settings.bgColor).r}, ${hexToRgb(settings.bgColor).g}, ${hexToRgb(settings.bgColor).b}, ${1 - settings.trailOpacity})`;
+            }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (settings.bgPulsing) {
@@ -1239,7 +1277,19 @@
                     } catch(e) { /* console.warn("Glitch block shift failed:", e) */ }
                 }
             }
-            
+
+            if (fadeProgress > 0) {
+                ctx.fillStyle = `rgba(0,0,0,${fadeProgress})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                fadeProgress = Math.max(0, fadeProgress - 0.02);
+            }
+
+            if (slideProgress > 0) {
+                const offset = canvas.width * (1 - slideProgress);
+                ctx.drawImage(transitionCanvas, -offset, 0);
+                slideProgress = Math.max(0, slideProgress - 0.02);
+            }
+
             ctx.restore(); // Restore base context state
 
             requestAnimationFrame(animate);
@@ -1362,8 +1412,17 @@
             }
         }
         
-        function randomizeParameters() {
-            if (!settings.randomizerActive) return;
+        function randomizeParameters(force = false) {
+            if (!settings.randomizerActive && !force) return;
+
+            if (settings.transitionType === 'fade') {
+                fadeProgress = 1;
+            } else if (settings.transitionType === 'slide') {
+                transitionCanvas.width = canvas.width;
+                transitionCanvas.height = canvas.height;
+                transitionCtx.drawImage(canvas, 0, 0);
+                slideProgress = 1;
+            }
 
             // Randomize visual particle settings
             settings.particleCount = Math.floor(Math.random() * (parseInt(ui.particleCount.max) - parseInt(ui.particleCount.min) +1 )) + parseInt(ui.particleCount.min);
@@ -1390,6 +1449,9 @@
             settings.zoomEffect = Math.random() > 0.5;
             settings.zoomEffectIntensity = Math.random() * (parseFloat(ui.zoomEffectIntensity.max) - parseFloat(ui.zoomEffectIntensity.min)) + parseFloat(ui.zoomEffectIntensity.min);
             settings.additiveBlending = Math.random() > 0.5;
+            settings.trailColorShift = Math.random() > 0.5;
+            const tOpts = ['none','fade','slide'];
+            settings.transitionType = tOpts[Math.floor(Math.random()*tOpts.length)];
 
             // Randomize sound parameters (if sound is enabled)
             if (settings.soundEnabled && soundInitialized) {
@@ -1442,6 +1504,7 @@
                 startRandomizer();
             }
         });
+        ui.randomizeNowBtn.addEventListener('click', () => randomizeParameters(true));
         
         // --- Document Ready ---
         document.addEventListener('DOMContentLoaded', () => {
