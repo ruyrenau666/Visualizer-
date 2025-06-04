@@ -240,8 +240,8 @@
         <div class="control-group">
             <div class="control-group-header"><i class="fas fa-atom"></i> Partículas <span class="toggle-arrow"><i class="fas fa-chevron-down"></i></span></div>
             <div class="control-group-content">
-                <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">100</span></label>
-                <input type="range" id="particleCount" min="10" max="500" value="100">
+                <label for="particleCount">Cantidad: <span id="particleCountValue" class="value-display">80</span></label>
+                <input type="range" id="particleCount" min="10" max="80" value="80">
                 
                 <label for="particleSize">Tamaño Base: <span id="particleSizeValue" class="value-display">3</span></label>
                 <input type="range" id="particleSize" min="1" max="20" value="3">
@@ -251,6 +251,13 @@
                     <option value="circle" selected>Círculo</option>
                     <option value="square">Cuadrado</option>
                     <option value="triangle">Triángulo</option>
+                    <option value="line">Línea</option>
+                    <option value="star">Estrella</option>
+                    <option value="hexagon">Hexágono</option>
+                    <option value="heart">Corazón</option>
+                    <option value="spiral">Espiral</option>
+                    <option value="diamond">Rombo</option>
+                    <option value="bubble">Burbuja</option>
                 </select>
 
                 <label for="particleColorPalette">Paleta de Colores:</label>
@@ -263,6 +270,11 @@
                     <option value="rainbow">Arcoiris Dinámico</option>
                     <option value="glitchColors">Colores Glitch</option>
                     <option value="electric">Eléctrica</option>
+                    <option value="sunset">Atardecer</option>
+                    <option value="forest">Bosque</option>
+                    <option value="cosmic">Cósmica</option>
+                    <option value="ice">Hielo</option>
+                    <option value="vaporwave">Vaporwave</option>
                 </select>
 
                 <label class="checkbox-label">
@@ -271,6 +283,20 @@
                 <label class="checkbox-label">
                     <input type="checkbox" id="particleBlink"> Parpadeo Aleatorio (Opacidad)
                 </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleIndividualRandom"> Aleatorización Individual
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="particleSizeRandom"> Tamaño Aleatorio
+                </label>
+                <label for="particleBehavior">Comportamiento:</label>
+                <select id="particleBehavior">
+                    <option value="normal" selected>Normal</option>
+                    <option value="erratic">Errático Individual</option>
+                    <option value="chaos">Caos Intermitente</option>
+                    <option value="orbital">Danza Orbital</option>
+                    <option value="coral">Movimiento Coral</option>
+                </select>
                  <label for="particleMaxSpeed">Velocidad Máxima: <span id="particleMaxSpeedValue" class="value-display">2</span></label>
                 <input type="range" id="particleMaxSpeed" min="0.1" max="10" step="0.1" value="2">
             </div>
@@ -310,6 +336,13 @@
                 <label for="micSensitivity">Sensibilidad: <span id="micSensitivityValue" class="value-display">1</span></label>
                 <input type="range" id="micSensitivity" min="0.1" max="5" step="0.1" value="1" disabled>
                 <p style="font-size:0.8em; margin-top: 5px;">Afecta tamaño y velocidad de partículas.</p>
+                <hr style="border-color: var(--border-color);">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="audioFileActive"> Usar Archivo de Audio
+                </label>
+                <input type="file" id="audioFile" accept="audio/*" disabled>
+                <label for="audioFileVolume">Volumen Archivo: <span id="audioFileVolumeValue" class="value-display">1</span></label>
+                <input type="range" id="audioFileVolume" min="0" max="1" step="0.01" value="1" disabled>
             </div>
         </div>
         
@@ -322,6 +355,9 @@
 
                 <label for="trailOpacity">Opacidad Estela (Trail): <span id="trailOpacityValue" class="value-display">0.1</span></label>
                 <input type="range" id="trailOpacity" min="0" max="1" step="0.01" value="0.1">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="trailColorShift"> Estela Multicolor
+                </label>
                 
                 <label class="checkbox-label">
                     <input type="checkbox" id="bgPulsing"> Fondo Pulsante
@@ -375,6 +411,10 @@
                     <option value="square">Cuadrada (Square)</option>
                     <option value="triangle">Triangular (Triangle)</option>
                     <option value="sawtooth">Diente de Sierra (Sawtooth)</option>
+                    <option value="noise">Ruido Blanco</option>
+                    <option value="am">AM</option>
+                    <option value="fm">FM</option>
+                    <option value="burst">Granular Burst</option>
                 </select>
 
                 <label for="soundScale">Escala Musical:</label>
@@ -387,6 +427,9 @@
 
                 <label for="soundRootFreq">Frecuencia Raíz (Tónica): <span id="soundRootFreqValue" class="value-display">C3</span></label>
                 <input type="range" id="soundRootFreq" min="24" max="72" value="48"> <!-- MIDI C1 to C5 -->
+
+                <label for="tempo">Tempo: <span id="tempoValue" class="value-display">120</span> BPM</label>
+                <input type="range" id="tempo" min="60" max="200" value="120">
 
                 <label for="soundOctaveRange">Rango de Octavas: <span id="soundOctaveRangeValue" class="value-display">2</span></label>
                 <input type="range" id="soundOctaveRange" min="1" max="4" value="2">
@@ -407,6 +450,12 @@
                 </label>
                 <label for="soundReverbWet">Cantidad Reverb: <span id="soundReverbWetValue" class="value-display">0.1</span></label>
                 <input type="range" id="soundReverbWet" min="0" max="1" step="0.05" value="0.1">
+                <label for="soundReverbType">Tipo de Reverb:</label>
+                <select id="soundReverbType">
+                    <option value="room" selected>Room</option>
+                    <option value="hall">Hall</option>
+                    <option value="cave">Cave</option>
+                </select>
 
                 <label class="checkbox-label">
                     <input type="checkbox" id="soundDelay"> Delay (Eco)
@@ -422,6 +471,11 @@
                 <label for="soundPhaserFreq">Velocidad Phaser: <span id="soundPhaserFreqValue" class="value-display">0.5</span> Hz</label>
                 <input type="range" id="soundPhaserFreq" min="0.1" max="5" step="0.1" value="0.5">
             </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="soundDistortion"> Distorsión
+                </label>
+                <label for="soundDistortionAmount">Nivel Distorsión: <span id="soundDistortionAmountValue" class="value-display">0.2</span></label>
+                <input type="range" id="soundDistortionAmount" min="0" max="1" step="0.01" value="0.2">
         </div>
 
         <!-- Kaleidoscope -->
@@ -453,6 +507,13 @@
                     <option value="15">15s</option>
                     <option value="30">30s</option>
                 </select>
+                <label for="transitionType">Tipo de Transición:</label>
+                <select id="transitionType">
+                    <option value="none" selected>Ninguna</option>
+                    <option value="fade">Desvanecer</option>
+                    <option value="slide">Deslizar</option>
+                </select>
+                <button id="randomizeNowBtn">Aleatorizar Ahora</button>
             </div>
         </div>
 
@@ -463,12 +524,17 @@
         const canvas = document.getElementById('visualizerCanvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        let audioContext, analyserNode, microphone, dataArray;
+        let audioContext, analyserNode, microphone, audioPlayer, dataArray;
         let randomizerIntervalId = null;
+        let fadeProgress = 0;
+        let slideProgress = 0;
+        const transitionCanvas = document.createElement('canvas');
+        const transitionCtx = transitionCanvas.getContext('2d');
 
         // --- Tone.js Setup ---
-        let masterGain, polySynth, reverb, delay, phaser;
+        let masterGain, polySynth, reverb, delay, phaser, distortion;
         let soundInitialized = false;
+        let prevSoundEnabled = null;
 
         const midiNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         function midiToNoteName(midiNum) {
@@ -479,20 +545,25 @@
         
         // Default settings object
         const defaultSettings = {
-            particleCount: 100,
+            particleCount: 80,
             particleSize: 3,
             particleShape: "circle",
             particleColorPalette: "neon",
             particleGlow: false,
             particleBlink: false,
+            particleIndividualRandom: false,
             particleMaxSpeed: 2,
             mouseEffect: "attract",
             mouseInfluenceRadius: 150,
             mouseForce: 0.5,
             mouseColorChange: true,
             mouseSizeChange: true,
+            particleSizeRandom: false,
+            particleBehavior: "normal",
             micActive: false,
             micSensitivity: 1,
+            audioFileActive: false,
+            audioFileVolume: 1,
             bgColor: "#000000",
             trailOpacity: 0.1,
             bgPulsing: false,
@@ -513,18 +584,24 @@
             soundRichTimbre: false,
             soundAttack: 0.01,
             soundRelease: 0.5,
+            tempo: 120,
             soundReverb: false,
             soundReverbWet: 0.1,
+            soundReverbType: 'room',
             soundDelay: false,
             soundDelayTime: 0.25,
             soundDelayFeedback: 0.3,
             soundPhaser: false,
             soundPhaserFreq: 0.5,
             kaleidoscopeActive: false,
+            soundDistortion: false,
+            soundDistortionAmount: 0.2,
             kaleidoscopeSegments: 6,
             kaleidoscopeMirror: true,
             randomizerActive: false,
-            randomizerInterval: 10
+            randomizerInterval: 10,
+            transitionType: 'none',
+            trailColorShift: false
         };
 
         let settings = { ...defaultSettings };
@@ -539,8 +616,11 @@
             particleColorPalette: document.getElementById('particleColorPalette'),
             particleGlow: document.getElementById('particleGlow'),
             particleBlink: document.getElementById('particleBlink'),
+            particleIndividualRandom: document.getElementById('particleIndividualRandom'),
             particleMaxSpeed: document.getElementById('particleMaxSpeed'),
             particleMaxSpeedValue: document.getElementById('particleMaxSpeedValue'),
+            particleSizeRandom: document.getElementById('particleSizeRandom'),
+            particleBehavior: document.getElementById('particleBehavior'),
             mouseEffect: document.getElementById('mouseEffect'),
             mouseInfluenceRadius: document.getElementById('mouseInfluenceRadius'),
             mouseInfluenceRadiusValue: document.getElementById('mouseInfluenceRadiusValue'),
@@ -548,12 +628,17 @@
             mouseForceValue: document.getElementById('mouseForceValue'),
             mouseColorChange: document.getElementById('mouseColorChange'),
             mouseSizeChange: document.getElementById('mouseSizeChange'),
-            micActive: document.getElementById('micActive'),
-            micSensitivity: document.getElementById('micSensitivity'),
-            micSensitivityValue: document.getElementById('micSensitivityValue'),
+           micActive: document.getElementById('micActive'),
+           micSensitivity: document.getElementById('micSensitivity'),
+           micSensitivityValue: document.getElementById('micSensitivityValue'),
+            audioFileActive: document.getElementById('audioFileActive'),
+            audioFile: document.getElementById('audioFile'),
+            audioFileVolume: document.getElementById('audioFileVolume'),
+            audioFileVolumeValue: document.getElementById('audioFileVolumeValue'),
             bgColor: document.getElementById('bgColor'),
-            trailOpacity: document.getElementById('trailOpacity'),
-            trailOpacityValue: document.getElementById('trailOpacityValue'),
+           trailOpacity: document.getElementById('trailOpacity'),
+           trailOpacityValue: document.getElementById('trailOpacityValue'),
+            trailColorShift: document.getElementById('trailColorShift'),
             bgPulsing: document.getElementById('bgPulsing'),
             bgPulseSpeed: document.getElementById('bgPulseSpeed'),
             bgPulseSpeedValue: document.getElementById('bgPulseSpeedValue'),
@@ -569,6 +654,8 @@
             soundOnBounce: document.getElementById('soundOnBounce'),
             masterVolume: document.getElementById('masterVolume'),
             masterVolumeValue: document.getElementById('masterVolumeValue'),
+            tempo: document.getElementById('tempo'),
+            tempoValue: document.getElementById('tempoValue'),
             soundWaveform: document.getElementById('soundWaveform'),
             soundScale: document.getElementById('soundScale'),
             soundRootFreq: document.getElementById('soundRootFreq'),
@@ -583,6 +670,7 @@
             soundReverb: document.getElementById('soundReverb'),
             soundReverbWet: document.getElementById('soundReverbWet'),
             soundReverbWetValue: document.getElementById('soundReverbWetValue'),
+            soundReverbType: document.getElementById('soundReverbType'),
             soundDelay: document.getElementById('soundDelay'),
             soundDelayTime: document.getElementById('soundDelayTime'),
             soundDelayTimeValue: document.getElementById('soundDelayTimeValue'),
@@ -592,11 +680,16 @@
             soundPhaserFreq: document.getElementById('soundPhaserFreq'),
             soundPhaserFreqValue: document.getElementById('soundPhaserFreqValue'),
             kaleidoscopeActive: document.getElementById('kaleidoscopeActive'),
+            soundDistortion: document.getElementById("soundDistortion"),
+            soundDistortionAmount: document.getElementById("soundDistortionAmount"),
+            soundDistortionAmountValue: document.getElementById("soundDistortionAmountValue"),
             kaleidoscopeSegments: document.getElementById('kaleidoscopeSegments'),
             kaleidoscopeSegmentsValue: document.getElementById('kaleidoscopeSegmentsValue'),
             kaleidoscopeMirror: document.getElementById('kaleidoscopeMirror'),
-            randomizerActive: document.getElementById('randomizerActive'),
-            randomizerInterval: document.getElementById('randomizerInterval'),
+           randomizerActive: document.getElementById('randomizerActive'),
+           randomizerInterval: document.getElementById('randomizerInterval'),
+            randomizeNowBtn: document.getElementById('randomizeNowBtn'),
+            transitionType: document.getElementById('transitionType'),
             messageBox: document.getElementById('messageBox'),
             controlsPanel: document.getElementById('controlsPanel'),
             toggleControlsBtn: document.getElementById('toggleControlsBtn'),
@@ -644,6 +737,8 @@
             }
              // Handle dependent UI states
             ui.micSensitivity.disabled = !settings.micActive;
+            ui.audioFile.disabled = !settings.audioFileActive;
+            ui.audioFileVolume.disabled = !settings.audioFileActive;
             
             // Re-init sound if synth type changes
             if(soundInitialized) configureToneSynth();
@@ -653,11 +748,12 @@
         async function initializeSound() {
             if (soundInitialized) return;
             await Tone.start(); // Required for user gesture
+            Tone.Transport.start();
 
             masterGain = new Tone.Gain(settings.masterVolume / 100).toDestination(); // Scale for Gain node
             
             reverb = new Tone.Reverb({
-                decay: 1.5,
+                decay: settings.soundReverbType === 'hall' ? 3 : (settings.soundReverbType === 'cave' ? 6 : 1.5),
                 wet: settings.soundReverbWet
             }).connect(masterGain);
 
@@ -671,62 +767,47 @@
                 frequency: settings.soundPhaserFreq,
                 octaves: 3,
                 stages: 10,
-                Q: 5,
                 baseFrequency: 350,
                 wet: 0.5 // Fixed wet, enable/disable via connection
             }).connect(masterGain);
+            distortion = new Tone.Distortion({distortion: settings.soundDistortionAmount, oversample: "4x", wet: 0.5}).connect(masterGain);
 
             configureToneSynth();
             soundInitialized = true;
             showMessage("Sistema de sonido inicializado.", 2000);
         }
-        
         function configureToneSynth() {
-            if (polySynth) {
-                polySynth.dispose();
+            if (polySynth) { polySynth.dispose(); }
+            let SynthClass;
+            let opts = {};
+            switch(settings.soundWaveform){
+                case "noise":
+                    SynthClass = Tone.NoiseSynth;
+                    opts = {noise:{type:"white"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0, release:settings.soundRelease}};
+                    break;
+                case "am":
+                    SynthClass = Tone.AMSynth;
+                    opts = {oscillator:{type:"sine"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}};
+                    break;
+                case "fm":
+                    SynthClass = Tone.FMSynth;
+                    opts = {oscillator:{type:"sine"}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}};
+                    break;
+                case "burst":
+                    SynthClass = Tone.MembraneSynth;
+                    opts = {envelope:{attack:settings.soundAttack, decay:settings.soundRelease, sustain:0, release:settings.soundRelease}};
+                    break;
+                default:
+                    SynthClass = settings.soundRichTimbre ? Tone.FMSynth : Tone.Synth;
+                    opts = {oscillator:{type:settings.soundWaveform}, envelope:{attack:settings.soundAttack, decay:0.1, sustain:0.3, release:settings.soundRelease}, harmonicity:settings.soundRichTimbre?3:1, modulationIndex:settings.soundRichTimbre?10:1, modulationEnvelope:{attack:settings.soundRichTimbre?0.01:0, decay:settings.soundRichTimbre?0.1:0, sustain:settings.soundRichTimbre?0.2:0, release:settings.soundRichTimbre?0.2:0}};
             }
-            const synthType = settings.soundRichTimbre ? Tone.FMSynth : Tone.Synth;
-            polySynth = new Tone.PolySynth(synthType, {
-                oscillator: { type: settings.soundWaveform },
-                envelope: {
-                    attack: settings.soundAttack,
-                    decay: 0.1, // Kept short
-                    sustain: 0.3, // Kept medium
-                    release: settings.soundRelease
-                },
-                // For FMSynth
-                harmonicity: settings.soundRichTimbre ? 3 : 1,
-                modulationIndex: settings.soundRichTimbre ? 10 : 1,
-                modulationEnvelope: {
-                    attack: settings.soundRichTimbre ? 0.01 : 0,
-                    decay: settings.soundRichTimbre ? 0.1 : 0,
-                    sustain: settings.soundRichTimbre ? 0.2 : 0,
-                    release: settings.soundRichTimbre ? 0.2 : 0,
-                }
-            });
-            
-            // Connect synth to effects chain based on checkboxes
-            let currentNode = polySynth;
-            if (settings.soundPhaser) currentNode.connect(phaser); else currentNode.connect(masterGain);
-            if (settings.soundDelay) (settings.soundPhaser ? phaser : polySynth).connect(delay);
-            if (settings.soundReverb) (settings.soundDelay ? delay : (settings.soundPhaser ? phaser : polySynth)).connect(reverb);
-            
-            if(!settings.soundPhaser && !settings.soundDelay && !settings.soundReverb) {
-                 polySynth.connect(masterGain);
-            } else {
-                if (settings.soundPhaser) polySynth.chain(phaser, masterGain);
-                if (settings.soundDelay) polySynth.chain(delay, masterGain);
-                if (settings.soundReverb) polySynth.chain(reverb, masterGain);
-
-                // This logic needs to be smarter for a proper chain.
-                // For now, simplified: connect to first active effect, or masterGain.
-                // A more robust chain:
-                let connectionPoint = polySynth;
-                if (settings.soundPhaser) { connectionPoint.connect(phaser); connectionPoint = phaser; }
-                if (settings.soundDelay) { connectionPoint.connect(delay); connectionPoint = delay; }
-                if (settings.soundReverb) { connectionPoint.connect(reverb); connectionPoint = reverb; }
-                connectionPoint.connect(masterGain); // Final connection
-            }
+            polySynth = new Tone.PolySynth(SynthClass, opts);
+            let cp = polySynth;
+            if (settings.soundPhaser) { cp.connect(phaser); cp = phaser; }
+            if (settings.soundDelay) { cp.connect(delay); cp = delay; }
+            if (settings.soundReverb) { cp.connect(reverb); cp = reverb; }
+            if (settings.soundDistortion) { cp.connect(distortion); cp = distortion; }
+            cp.connect(masterGain);
         }
 
         function updateSoundSettings() {
@@ -734,25 +815,11 @@
 
             masterGain.gain.rampTo(Tone.dbToGain(settings.masterVolume), 0.1);
 
-            if (polySynth) {
-                polySynth.set({
-                    oscillator: { type: settings.soundWaveform },
-                    envelope: {
-                        attack: settings.soundAttack,
-                        release: settings.soundRelease
-                    }
-                });
-                 if (settings.soundRichTimbre && polySynth. आवाजیں && polySynth.voices[0] instanceof Tone.FMSynth) { // आवाजیں is 'voices' in Hindi
-                    polySynth.set({
-                        harmonicity: 3,
-                        modulationIndex: 10,
-                         modulationEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 }
-                    });
-                } else if (polySynth.voices && polySynth.voices[0] instanceof Tone.FMSynth) { // FMSynth but rich timbre off
-                     polySynth.set({ harmonicity: 1, modulationIndex: 1});
-                }
-            }
+            Tone.Transport.bpm.rampTo(settings.tempo, 0.1);
+
+            configureToneSynth();
             
+            reverb.decay = settings.soundReverbType === 'hall' ? 3 : (settings.soundReverbType === 'cave' ? 6 : 1.5);
             reverb.wet.rampTo(settings.soundReverb ? settings.soundReverbWet : 0, 0.1);
             delay.delayTime.rampTo(settings.soundDelayTime, 0.1);
             delay.feedback.rampTo(settings.soundDelayFeedback, 0.1);
@@ -761,8 +828,8 @@
             phaser.frequency.rampTo(settings.soundPhaserFreq, 0.1);
             phaser.wet.rampTo(settings.soundPhaser ? 0.5 : 0, 0.1); // Enable/disable phaser via wet
 
-            // Re-evaluate connections if synth type or effect chain changes
-            configureToneSynth();
+            distortion.distortion = settings.soundDistortionAmount;
+            distortion.wet.rampTo(settings.soundDistortion ? 0.5 : 0, 0.1);
         }
         
         const scales = {
@@ -822,6 +889,7 @@
                 this.vy = (Math.random() - 0.5) * settings.particleMaxSpeed;
                 this.color = getRandomColor();
                 this.originalColor = this.color;
+                this.shape = settings.particleShape;
                 this.opacity = 1;
                 this.life = 0; // For effects like temporary color change
                 this.maxLife = 60; // Frames
@@ -832,6 +900,43 @@
                 if (this.life > this.maxLife) {
                     this.color = this.originalColor; // Revert color
                     this.size = this.baseSize; // Revert size
+                }
+
+                if (settings.particleIndividualRandom) {
+                    this.vx += (Math.random() - 0.5) * 0.2;
+                    this.vy += (Math.random() - 0.5) * 0.2;
+                    if (Math.random() < 0.02) {
+                        this.color = getRandomColor();
+                        this.originalColor = this.color;
+                    }
+                    if (Math.random() < 0.01) {
+                        const shapes = ['circle','square','triangle','line','star','hexagon','heart','spiral','diamond','bubble'];
+                        this.shape = shapes[Math.floor(Math.random()*shapes.length)];
+                    }
+                }
+                if (settings.particleSizeRandom) {
+                    this.size = this.baseSize * (0.75 + Math.random() * 0.5);
+                }
+                switch(settings.particleBehavior){
+                    case "erratic":
+                        this.vx += (Math.random()-0.5)*0.4;
+                        this.vy += (Math.random()-0.5)*0.4;
+                        break;
+                    case "chaos":
+                        if(Math.random()<0.05){
+                            this.vx = (Math.random()-0.5)*settings.particleMaxSpeed*2;
+                            this.vy = (Math.random()-0.5)*settings.particleMaxSpeed*2;
+                        }
+                        break;
+                    case "orbital":
+                        const ang = Math.atan2(this.y-canvas.height/2, this.x-canvas.width/2);
+                        this.vx += -Math.sin(ang)*0.05;
+                        this.vy += Math.cos(ang)*0.05;
+                        break;
+                    case "coral":
+                        this.vx += Math.sin((this.y+Date.now()*0.001))*0.02;
+                        this.vy += Math.cos((this.x+Date.now()*0.001))*0.02;
+                        break;
                 }
 
                 // Basic movement
@@ -893,20 +998,65 @@
 
                 ctx.fillStyle = this.color;
                 
-                const shape = settings.particleShape;
-                if (shape === 'circle') {
+                const shape = this.shape;
+                if (shape === "circle") {
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                } else if (shape === 'square') {
+                } else if (shape === "square") {
                     ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-                } else if (shape === 'triangle') {
+                } else if (shape === "triangle") {
                     ctx.moveTo(this.x, this.y - this.size / Math.sqrt(3));
                     ctx.lineTo(this.x - this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
                     ctx.lineTo(this.x + this.size / 2, this.y + this.size / (2 * Math.sqrt(3)));
                     ctx.closePath();
+                } else if (shape === "line") {
+                    ctx.moveTo(this.x - this.size, this.y);
+                    ctx.lineTo(this.x + this.size, this.y);
+                } else if (shape === "star") {
+                    const spikes = 5;
+                    const step = Math.PI / spikes;
+                    ctx.moveTo(this.x + Math.cos(0) * this.size, this.y + Math.sin(0) * this.size);
+                    for (let i = 0; i < 2 * spikes; i++) {
+                        const rad = i % 2 === 0 ? this.size : this.size * 0.5;
+                        const ang = i * step;
+                        ctx.lineTo(this.x + Math.cos(ang) * rad, this.y + Math.sin(ang) * rad);
+                    }
+                    ctx.closePath();
+                } else if (shape === "hexagon") {
+                    for (let i = 0; i < 6; i++) {
+                        const ang = Math.PI / 3 * i;
+                        ctx.lineTo(this.x + Math.cos(ang) * this.size, this.y + Math.sin(ang) * this.size);
+                    }
+                    ctx.closePath();
+                } else if (shape === "heart") {
+                    ctx.moveTo(this.x, this.y + this.size / 4);
+                    ctx.bezierCurveTo(this.x - this.size, this.y - this.size / 2, this.x - this.size, this.y + this.size, this.x, this.y + this.size);
+                    ctx.bezierCurveTo(this.x + this.size, this.y + this.size, this.x + this.size, this.y - this.size / 2, this.x, this.y + this.size / 4);
+                    ctx.closePath();
+                } else if (shape === "spiral") {
+                    let angle = 0;
+                    let radius = 0;
+                    ctx.moveTo(this.x, this.y);
+                    for (let i = 0; i < 20; i++) {
+                        angle += Math.PI / 4;
+                        radius += this.size / 20;
+                        ctx.lineTo(this.x + Math.cos(angle) * radius, this.y + Math.sin(angle) * radius);
+                    }
+                } else if (shape === "diamond") {
+                    ctx.moveTo(this.x, this.y - this.size);
+                    ctx.lineTo(this.x + this.size, this.y);
+                    ctx.lineTo(this.x, this.y + this.size);
+                    ctx.lineTo(this.x - this.size, this.y);
+                    ctx.closePath();
+                } else if (shape === "bubble") {
+                    const grd = ctx.createRadialGradient(this.x - this.size * 0.3, this.y - this.size * 0.3, this.size * 0.1, this.x, this.y, this.size);
+                    grd.addColorStop(0, "rgba(255,255,255,0.8)");
+                    grd.addColorStop(1, this.color);
+                    ctx.fillStyle = grd;
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 }
                 ctx.fill();
-                ctx.globalAlpha = 1; // Reset globalAlpha
-                ctx.shadowBlur = 0; // Reset shadow
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
             }
         }
 
@@ -918,9 +1068,15 @@
             fire: ["#FF4500", "#FFA500", "#FFD700", "#FF6347", "#DC143C"],
             ocean: ["#00BFFF", "#1E90FF", "#00CED1", "#4682B4", "#40E0D0"],
             glitchColors: ["#FF00FF", "#00FFFF", "#FFFF00", "#FF0000", "#00FF00", "#0000FF"],
-            electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"]
+            electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"],
+            sunset: ["#FF7E5F", "#FEB47B", "#FF6F61", "#FF9A8D", "#D56062"],
+            forest: ["#2F4F4F", "#006400", "#228B22", "#6B8E23", "#556B2F"],
+            cosmic: ["#380036", "#6B007B", "#D483FF", "#F5A1FF", "#A21B83"],
+            ice: ["#E0F7FA", "#B2EBF2", "#80DEEA", "#4DD0E1", "#26C6DA"],
+            vaporwave: ["#FF77FF", "#78FFD6", "#61DAFB", "#C1F9FC", "#FCB0FF"]
         };
         let currentRainbowHue = 0;
+        let trailHue = 0;
 
         function getRandomColor() {
             const paletteName = settings.particleColorPalette;
@@ -935,7 +1091,7 @@
         // --- Initialization and Main Loop ---
         function initParticles() {
             particles = [];
-            for (let i = 0; i < settings.particleCount; i++) {
+            for (let i = 0; i < Math.min(settings.particleCount,80); i++) {
                 const p = new Particle(Math.random() * canvas.width, Math.random() * canvas.height);
                 particles.push(p);
                 playParticleSound(p, "birth");
@@ -987,7 +1143,7 @@
                 });
             } else if (mouse.button === 2) { // Right click: Generate particles
                 for (let i = 0; i < 5; i++) { // Generate a few
-                    if (particles.length < 1000) { // Max cap
+                    if (particles.length < 80) { // Max cap
                         const p = new Particle(mouse.x + (Math.random()-0.5)*20, mouse.y + (Math.random()-0.5)*20);
                         particles.push(p);
                         playParticleSound(p, "birth");
@@ -1036,7 +1192,7 @@
             });
         }
 
-        async function setupMicrophone() {
+async function setupMicrophone() {
             if (!settings.micActive) {
                 if (microphone) {
                     microphone.dispose();
@@ -1044,10 +1200,24 @@
                     analyserNode = null;
                     showMessage("Micrófono desactivado.", 1500);
                 }
+                if (prevSoundEnabled !== null) {
+                    settings.soundEnabled = prevSoundEnabled;
+                    prevSoundEnabled = null;
+                    updateUIFromSettings();
+                    if(soundInitialized) updateSoundSettings();
+                }
                 ui.micSensitivity.disabled = true;
                 return;
             }
-            
+
+            if (settings.audioFileActive) {
+                settings.audioFileActive = false;
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                ui.audioFileActive.checked = false;
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+            }
+
             if (!microphone) {
                 try {
                     if (!soundInitialized) await initializeSound(); // Ensure Tone.js is started
@@ -1057,6 +1227,12 @@
                     microphone.connect(analyserNode);
                     showMessage("Micrófono activado. Por favor, permite el acceso.", 3000);
                     ui.micSensitivity.disabled = false;
+                    if (prevSoundEnabled === null) {
+                        prevSoundEnabled = settings.soundEnabled;
+                        settings.soundEnabled = false;
+                        updateUIFromSettings();
+                        if(soundInitialized) updateSoundSettings();
+                    }
                 } catch (err) {
                     console.error("Error al acceder al micrófono:", err);
                     showMessage("Error al acceder al micrófono. Revisa los permisos.", 3000);
@@ -1068,11 +1244,57 @@
             }
         }
         
+        async function setupAudioFile() {
+            if (!settings.audioFileActive) {
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                if (!settings.micActive && microphone) { microphone.disconnect(); analyserNode = null; }
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+                return;
+            }
+
+            const file = ui.audioFile.files[0];
+            if (!file) {
+                showMessage("Selecciona un archivo de audio.", 2000);
+                settings.audioFileActive = false;
+                ui.audioFileActive.checked = false;
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+                return;
+            }
+
+            if (!soundInitialized) await initializeSound();
+            if (audioPlayer) { audioPlayer.dispose(); }
+            audioPlayer = new Tone.Player(URL.createObjectURL(file));
+            analyserNode = new Tone.Analyser('waveform', 1024);
+            audioPlayer.connect(analyserNode);
+            audioPlayer.connect(masterGain);
+            audioPlayer.autostart = true;
+            audioPlayer.volume.value = Tone.gainToDb(settings.audioFileVolume);
+            ui.audioFile.disabled = false;
+            ui.audioFileVolume.disabled = false;
+        }
+
+        function handleAudioFileChange() {
+            if (settings.audioFileActive) {
+                settings.micActive = false;
+                ui.micActive.checked = false;
+                setupAudioFile();
+            } else {
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                if (!settings.micActive && microphone) { microphone.disconnect(); analyserNode = null; }
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+            }
+            if (audioPlayer) {
+                audioPlayer.volume.rampTo(Tone.gainToDb(settings.audioFileVolume), 0.1);
+            }
+            updateUIFromSettings();
+        }
+
         function getMicLevel() {
-            if (!settings.micActive || !analyserNode) return 0;
-            const values = analyserNode.getValue(); // This is an array of values
-            // For 'waveform', values are between -1 and 1. We need RMS or peak.
-            // Simple average of absolute values for a rough 'volume'
+            if ((!settings.micActive && !settings.audioFileActive) || !analyserNode) return 0;
+            const values = analyserNode.getValue();
             let sum = 0;
             for (let i = 0; i < values.length; i++) {
                 sum += Math.abs(values[i]);
@@ -1089,7 +1311,12 @@
 
             // --- Background Effects ---
             // Trail effect by drawing a semi-transparent rectangle
-            ctx.fillStyle = `rgba(${hexToRgb(settings.bgColor).r}, ${hexToRgb(settings.bgColor).g}, ${hexToRgb(settings.bgColor).b}, ${1 - settings.trailOpacity})`;
+            if (settings.trailColorShift) {
+                trailHue = (trailHue + 1) % 360;
+                ctx.fillStyle = `hsla(${trailHue}, 100%, 10%, ${1 - settings.trailOpacity})`;
+            } else {
+                ctx.fillStyle = `rgba(${hexToRgb(settings.bgColor).r}, ${hexToRgb(settings.bgColor).g}, ${hexToRgb(settings.bgColor).b}, ${1 - settings.trailOpacity})`;
+            }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (settings.bgPulsing) {
@@ -1166,7 +1393,19 @@
                     } catch(e) { /* console.warn("Glitch block shift failed:", e) */ }
                 }
             }
-            
+
+            if (fadeProgress > 0) {
+                ctx.fillStyle = `rgba(0,0,0,${fadeProgress})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                fadeProgress = Math.max(0, fadeProgress - 0.02);
+            }
+
+            if (slideProgress > 0) {
+                const offset = canvas.width * (1 - slideProgress);
+                ctx.drawImage(transitionCanvas, -offset, 0);
+                slideProgress = Math.max(0, slideProgress - 0.02);
+            }
+
             ctx.restore(); // Restore base context state
 
             requestAnimationFrame(animate);
@@ -1213,6 +1452,7 @@
                             }
                         }
                         if (key === 'micActive') setupMicrophone();
+                        if (key === 'audioFileActive' || key === 'audioFile' || key === 'audioFileVolume') handleAudioFileChange();
                         if (key.startsWith('sound') || key === 'masterVolume') updateSoundSettings();
                     });
                 }
@@ -1249,8 +1489,9 @@
             initParticles(); // Re-initialize particles with default count etc.
             if(soundInitialized) updateSoundSettings(); // Reset sound params
             if(settings.micActive) setupMicrophone(); else if(microphone) microphone.close();
+            if(audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
             stopRandomizer(); // Stop randomizer if it was active
-            ui.randomizerActive.checked = false; 
+            ui.randomizerActive.checked = false;
             showMessage("Configuración reiniciada a los valores por defecto.", 2000);
         }
         
@@ -1289,8 +1530,17 @@
             }
         }
         
-        function randomizeParameters() {
-            if (!settings.randomizerActive) return;
+        function randomizeParameters(force = false) {
+            if (!settings.randomizerActive && !force) return;
+
+            if (settings.transitionType === 'fade') {
+                fadeProgress = 1;
+            } else if (settings.transitionType === 'slide') {
+                transitionCanvas.width = canvas.width;
+                transitionCanvas.height = canvas.height;
+                transitionCtx.drawImage(canvas, 0, 0);
+                slideProgress = 1;
+            }
 
             // Randomize visual particle settings
             settings.particleCount = Math.floor(Math.random() * (parseInt(ui.particleCount.max) - parseInt(ui.particleCount.min) +1 )) + parseInt(ui.particleCount.min);
@@ -1301,6 +1551,10 @@
             settings.particleColorPalette = palettesKeys[Math.floor(Math.random() * palettesKeys.length)];
             settings.particleGlow = Math.random() > 0.5;
             settings.particleBlink = Math.random() > 0.5;
+            settings.particleSizeRandom = Math.random() > 0.5;
+            const behaviors = ["normal","erratic","chaos","orbital","coral"];
+            settings.particleBehavior = behaviors[Math.floor(Math.random()*behaviors.length)];
+            settings.particleIndividualRandom = Math.random() > 0.5;
             settings.particleMaxSpeed = Math.random() * (parseFloat(ui.particleMaxSpeed.max) - parseFloat(ui.particleMaxSpeed.min)) + parseFloat(ui.particleMaxSpeed.min);
 
             // Randomize background and effects
@@ -1313,6 +1567,9 @@
             settings.zoomEffect = Math.random() > 0.5;
             settings.zoomEffectIntensity = Math.random() * (parseFloat(ui.zoomEffectIntensity.max) - parseFloat(ui.zoomEffectIntensity.min)) + parseFloat(ui.zoomEffectIntensity.min);
             settings.additiveBlending = Math.random() > 0.5;
+            settings.trailColorShift = Math.random() > 0.5;
+            const tOpts = ['none','fade','slide'];
+            settings.transitionType = tOpts[Math.floor(Math.random()*tOpts.length)];
 
             // Randomize sound parameters (if sound is enabled)
             if (settings.soundEnabled && soundInitialized) {
@@ -1332,6 +1589,8 @@
                 settings.soundDelayTime = Math.random() * (parseFloat(ui.soundDelayTime.max) - parseFloat(ui.soundDelayTime.min)) + parseFloat(ui.soundDelayTime.min);
                 settings.soundDelayFeedback = Math.random() * (parseFloat(ui.soundDelayFeedback.max) - parseFloat(ui.soundDelayFeedback.min)) + parseFloat(ui.soundDelayFeedback.min);
                 settings.soundPhaser = Math.random() > 0.5;
+                settings.soundDistortion = Math.random() > 0.5;
+                settings.soundDistortionAmount = Math.random();
                 settings.soundPhaserFreq = Math.random() * (parseFloat(ui.soundPhaserFreq.max) - parseFloat(ui.soundPhaserFreq.min)) + parseFloat(ui.soundPhaserFreq.min);
                 updateSoundSettings();
             }
@@ -1363,6 +1622,7 @@
                 startRandomizer();
             }
         });
+        ui.randomizeNowBtn.addEventListener('click', () => randomizeParameters(true));
         
         // --- Document Ready ---
         document.addEventListener('DOMContentLoaded', () => {
