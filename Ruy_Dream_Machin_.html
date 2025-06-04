@@ -253,6 +253,11 @@
                     <option value="triangle">Triángulo</option>
                     <option value="line">Línea</option>
                     <option value="star">Estrella</option>
+                    <option value="hexagon">Hexágono</option>
+                    <option value="heart">Corazón</option>
+                    <option value="spiral">Espiral</option>
+                    <option value="diamond">Rombo</option>
+                    <option value="bubble">Burbuja</option>
                 </select>
 
                 <label for="particleColorPalette">Paleta de Colores:</label>
@@ -265,6 +270,11 @@
                     <option value="rainbow">Arcoiris Dinámico</option>
                     <option value="glitchColors">Colores Glitch</option>
                     <option value="electric">Eléctrica</option>
+                    <option value="sunset">Atardecer</option>
+                    <option value="forest">Bosque</option>
+                    <option value="cosmic">Cósmica</option>
+                    <option value="ice">Hielo</option>
+                    <option value="vaporwave">Vaporwave</option>
                 </select>
 
                 <label class="checkbox-label">
@@ -326,6 +336,13 @@
                 <label for="micSensitivity">Sensibilidad: <span id="micSensitivityValue" class="value-display">1</span></label>
                 <input type="range" id="micSensitivity" min="0.1" max="5" step="0.1" value="1" disabled>
                 <p style="font-size:0.8em; margin-top: 5px;">Afecta tamaño y velocidad de partículas.</p>
+                <hr style="border-color: var(--border-color);">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="audioFileActive"> Usar Archivo de Audio
+                </label>
+                <input type="file" id="audioFile" accept="audio/*" disabled>
+                <label for="audioFileVolume">Volumen Archivo: <span id="audioFileVolumeValue" class="value-display">1</span></label>
+                <input type="range" id="audioFileVolume" min="0" max="1" step="0.01" value="1" disabled>
             </div>
         </div>
         
@@ -507,7 +524,7 @@
         const canvas = document.getElementById('visualizerCanvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        let audioContext, analyserNode, microphone, dataArray;
+        let audioContext, analyserNode, microphone, audioPlayer, dataArray;
         let randomizerIntervalId = null;
         let fadeProgress = 0;
         let slideProgress = 0;
@@ -545,6 +562,8 @@
             particleBehavior: "normal",
             micActive: false,
             micSensitivity: 1,
+            audioFileActive: false,
+            audioFileVolume: 1,
             bgColor: "#000000",
             trailOpacity: 0.1,
             bgPulsing: false,
@@ -609,9 +628,13 @@
             mouseForceValue: document.getElementById('mouseForceValue'),
             mouseColorChange: document.getElementById('mouseColorChange'),
             mouseSizeChange: document.getElementById('mouseSizeChange'),
-            micActive: document.getElementById('micActive'),
-            micSensitivity: document.getElementById('micSensitivity'),
-            micSensitivityValue: document.getElementById('micSensitivityValue'),
+           micActive: document.getElementById('micActive'),
+           micSensitivity: document.getElementById('micSensitivity'),
+           micSensitivityValue: document.getElementById('micSensitivityValue'),
+            audioFileActive: document.getElementById('audioFileActive'),
+            audioFile: document.getElementById('audioFile'),
+            audioFileVolume: document.getElementById('audioFileVolume'),
+            audioFileVolumeValue: document.getElementById('audioFileVolumeValue'),
             bgColor: document.getElementById('bgColor'),
            trailOpacity: document.getElementById('trailOpacity'),
            trailOpacityValue: document.getElementById('trailOpacityValue'),
@@ -714,6 +737,8 @@
             }
              // Handle dependent UI states
             ui.micSensitivity.disabled = !settings.micActive;
+            ui.audioFile.disabled = !settings.audioFileActive;
+            ui.audioFileVolume.disabled = !settings.audioFileActive;
             
             // Re-init sound if synth type changes
             if(soundInitialized) configureToneSynth();
@@ -885,7 +910,7 @@
                         this.originalColor = this.color;
                     }
                     if (Math.random() < 0.01) {
-                        const shapes = ['circle','square','triangle','line','star'];
+                        const shapes = ['circle','square','triangle','line','star','hexagon','heart','spiral','diamond','bubble'];
                         this.shape = shapes[Math.floor(Math.random()*shapes.length)];
                     }
                 }
@@ -996,6 +1021,38 @@
                         ctx.lineTo(this.x + Math.cos(ang) * rad, this.y + Math.sin(ang) * rad);
                     }
                     ctx.closePath();
+                } else if (shape === "hexagon") {
+                    for (let i = 0; i < 6; i++) {
+                        const ang = Math.PI / 3 * i;
+                        ctx.lineTo(this.x + Math.cos(ang) * this.size, this.y + Math.sin(ang) * this.size);
+                    }
+                    ctx.closePath();
+                } else if (shape === "heart") {
+                    ctx.moveTo(this.x, this.y + this.size / 4);
+                    ctx.bezierCurveTo(this.x - this.size, this.y - this.size / 2, this.x - this.size, this.y + this.size, this.x, this.y + this.size);
+                    ctx.bezierCurveTo(this.x + this.size, this.y + this.size, this.x + this.size, this.y - this.size / 2, this.x, this.y + this.size / 4);
+                    ctx.closePath();
+                } else if (shape === "spiral") {
+                    let angle = 0;
+                    let radius = 0;
+                    ctx.moveTo(this.x, this.y);
+                    for (let i = 0; i < 20; i++) {
+                        angle += Math.PI / 4;
+                        radius += this.size / 20;
+                        ctx.lineTo(this.x + Math.cos(angle) * radius, this.y + Math.sin(angle) * radius);
+                    }
+                } else if (shape === "diamond") {
+                    ctx.moveTo(this.x, this.y - this.size);
+                    ctx.lineTo(this.x + this.size, this.y);
+                    ctx.lineTo(this.x, this.y + this.size);
+                    ctx.lineTo(this.x - this.size, this.y);
+                    ctx.closePath();
+                } else if (shape === "bubble") {
+                    const grd = ctx.createRadialGradient(this.x - this.size * 0.3, this.y - this.size * 0.3, this.size * 0.1, this.x, this.y, this.size);
+                    grd.addColorStop(0, "rgba(255,255,255,0.8)");
+                    grd.addColorStop(1, this.color);
+                    ctx.fillStyle = grd;
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 }
                 ctx.fill();
                 ctx.globalAlpha = 1;
@@ -1011,7 +1068,12 @@
             fire: ["#FF4500", "#FFA500", "#FFD700", "#FF6347", "#DC143C"],
             ocean: ["#00BFFF", "#1E90FF", "#00CED1", "#4682B4", "#40E0D0"],
             glitchColors: ["#FF00FF", "#00FFFF", "#FFFF00", "#FF0000", "#00FF00", "#0000FF"],
-            electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"]
+            electric: ["#7DF9FF", "#00FFFF", "#007FFF", "#0000FF", "#8A2BE2"],
+            sunset: ["#FF7E5F", "#FEB47B", "#FF6F61", "#FF9A8D", "#D56062"],
+            forest: ["#2F4F4F", "#006400", "#228B22", "#6B8E23", "#556B2F"],
+            cosmic: ["#380036", "#6B007B", "#D483FF", "#F5A1FF", "#A21B83"],
+            ice: ["#E0F7FA", "#B2EBF2", "#80DEEA", "#4DD0E1", "#26C6DA"],
+            vaporwave: ["#FF77FF", "#78FFD6", "#61DAFB", "#C1F9FC", "#FCB0FF"]
         };
         let currentRainbowHue = 0;
         let trailHue = 0;
@@ -1130,7 +1192,7 @@
             });
         }
 
-        async function setupMicrophone() {
+async function setupMicrophone() {
             if (!settings.micActive) {
                 if (microphone) {
                     microphone.dispose();
@@ -1146,6 +1208,14 @@
                 }
                 ui.micSensitivity.disabled = true;
                 return;
+            }
+
+            if (settings.audioFileActive) {
+                settings.audioFileActive = false;
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                ui.audioFileActive.checked = false;
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
             }
 
             if (!microphone) {
@@ -1174,11 +1244,57 @@
             }
         }
         
+        async function setupAudioFile() {
+            if (!settings.audioFileActive) {
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                if (!settings.micActive && microphone) { microphone.disconnect(); analyserNode = null; }
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+                return;
+            }
+
+            const file = ui.audioFile.files[0];
+            if (!file) {
+                showMessage("Selecciona un archivo de audio.", 2000);
+                settings.audioFileActive = false;
+                ui.audioFileActive.checked = false;
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+                return;
+            }
+
+            if (!soundInitialized) await initializeSound();
+            if (audioPlayer) { audioPlayer.dispose(); }
+            audioPlayer = new Tone.Player(URL.createObjectURL(file));
+            analyserNode = new Tone.Analyser('waveform', 1024);
+            audioPlayer.connect(analyserNode);
+            audioPlayer.connect(masterGain);
+            audioPlayer.autostart = true;
+            audioPlayer.volume.value = Tone.gainToDb(settings.audioFileVolume);
+            ui.audioFile.disabled = false;
+            ui.audioFileVolume.disabled = false;
+        }
+
+        function handleAudioFileChange() {
+            if (settings.audioFileActive) {
+                settings.micActive = false;
+                ui.micActive.checked = false;
+                setupAudioFile();
+            } else {
+                if (audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
+                if (!settings.micActive && microphone) { microphone.disconnect(); analyserNode = null; }
+                ui.audioFile.disabled = true;
+                ui.audioFileVolume.disabled = true;
+            }
+            if (audioPlayer) {
+                audioPlayer.volume.rampTo(Tone.gainToDb(settings.audioFileVolume), 0.1);
+            }
+            updateUIFromSettings();
+        }
+
         function getMicLevel() {
-            if (!settings.micActive || !analyserNode) return 0;
-            const values = analyserNode.getValue(); // This is an array of values
-            // For 'waveform', values are between -1 and 1. We need RMS or peak.
-            // Simple average of absolute values for a rough 'volume'
+            if ((!settings.micActive && !settings.audioFileActive) || !analyserNode) return 0;
+            const values = analyserNode.getValue();
             let sum = 0;
             for (let i = 0; i < values.length; i++) {
                 sum += Math.abs(values[i]);
@@ -1336,6 +1452,7 @@
                             }
                         }
                         if (key === 'micActive') setupMicrophone();
+                        if (key === 'audioFileActive' || key === 'audioFile' || key === 'audioFileVolume') handleAudioFileChange();
                         if (key.startsWith('sound') || key === 'masterVolume') updateSoundSettings();
                     });
                 }
@@ -1372,8 +1489,9 @@
             initParticles(); // Re-initialize particles with default count etc.
             if(soundInitialized) updateSoundSettings(); // Reset sound params
             if(settings.micActive) setupMicrophone(); else if(microphone) microphone.close();
+            if(audioPlayer) { audioPlayer.dispose(); audioPlayer = null; }
             stopRandomizer(); // Stop randomizer if it was active
-            ui.randomizerActive.checked = false; 
+            ui.randomizerActive.checked = false;
             showMessage("Configuración reiniciada a los valores por defecto.", 2000);
         }
         
